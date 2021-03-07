@@ -16,13 +16,28 @@ roi_loc = "./image1/color_rois/"
 
 
 matching_ref_loc ="./Assets/Seg_Module/Output/Matching/ref/"
-matching_test_loc = "./Assets/Seg_Module/Output/Matchihng/test/"
-nonmatching_ref_loc = "./Assets/Seg_Module/Output/Non_Matchihng/ref/"
-nommatching_test_loc="./Assets/Seg_Module/Output/Non_Matchihng/test/"
+matching_test_loc = "./Assets/Seg_Module/Output/Matching/test/"
+nonmatching_ref_loc = "./Assets/Seg_Module/Output/Non_Matching/ref/"
+nonmatching_test_loc="./Assets/Seg_Module/Output/Non_Matching/test/"
+
+ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
+test_seg_roi_loc = "./Assets/QA_Module/Output/rois"
 
 # matching_ref_loc
-file_list = os.listdir(matching_ref_loc)
-no_of_segments = len(file_list)
+mr_file_list = os.listdir(matching_ref_loc)
+no_of_matching_ref_segs = len(mr_file_list)
+
+#matching_test_loc
+mt_file_list = os.listdir(matching_test_loc)
+no_of_matching_test_segs = len(mt_file_list)
+
+#nonmatching_ref_loc
+nmr_file_list = os.listdir(nonmatching_ref_loc)
+no_of_nonmatching_ref_segs = len(nmr_file_list)
+
+#non_matching_test_loc
+nmt_file_list = os.listdir(nonmatching_test_loc)
+no_of_nonmatching_test_segs = len(nmt_file_list)
 
 
 #Test Image background mask and reference image outer background mask is needed for this
@@ -36,7 +51,7 @@ no_of_segments = len(file_list)
 #Begin function here
 def detect_features(no_of_segmnts, ref_img_check):
         features = []
-        for i in range(no_of_segments):
+        for i in range(no_of_matching_ref_segs):
                 seg_features = []
                 if ref_img_check == 1 :
                         seg = cv2.imread(matching_ref_loc+"m"+"_"+str(i)+".jpg")
@@ -187,74 +202,140 @@ def detect_features(no_of_segmnts, ref_img_check):
                 # cv2.imshow("segment_"+str(i), seg)
                 # cv2.imshow("segment grThresh_"+str(i), thresh_seg)
                 # cv2.waitKey(0)
+                # Color Detection
 
+                # Extract the printwork from the image or take the Output from Ishara
+                # Should possible give this as a parameter for the function
+                # Take the printwork from Piyumika with black for the background
 
-        #Color Detection
+                #u oh
+                # if ref_img_check == 1:
+                #         artwork = cv2.imread(ref_artwork_loc + "ref_artwork.jpg")
+                # else:
+                #         artwork = cv2.imread(test_artwork_loc + "test_artwork.jpg")
 
-                #Extract the printwork from the image or take the Output from Ishara
-                #Should possible give this as a parameter for the function
-                #Take the printwork from Piyumika with black for the background
+                artwork = seg
 
-        if ref_img_check == 1:
-                artwork = cv2.imread(ref_artwork_loc + "ref_artwork.jpg")
-        else :
-                artwork = cv2.imread(test_artwork_loc + "test_artwork.jpg")
+                artwork_hsv = cv2.cvtColor(artwork, cv2.COLOR_BGR2HSV)
 
-        artwork_hsv = cv2.cvtColor(artwork, cv2.COLOR_BGR2HSV)
+                # Getting the contours corresponding to each segment
+                # artwork_contours = cv2.findContours()
+                # print(artwork_hsv.shape)
+                # Breaking down the image into Regions of Interest (4 regions)
 
+                artwork_dimensions = artwork.shape
+                # print(artwork_hsv)
+                split_index = int(artwork_dimensions[0] / 2)
+                slice_1 = np.split(artwork_hsv, [split_index], 0)
+                print(len(slice_1))
+                slice_2 = []
+                # print("Slice 1 :", slice_1)
+                for i in range(len(slice_1)):
+                        split_index_2 = int(slice_1[i].shape[1] / 2)
+                        slice_2.append(np.split(slice_1[i], [split_index_2], 1))
 
+                roi = [slice_2[0][0], slice_2[0][1], slice_2[1][0], slice_2[1][1]]
 
-        #Getting the contours corresponding to each segment
-        # artwork_contours = cv2.findContours()
-        # print(artwork_hsv.shape)
-                #Breaking down the image into Regions of Interest (4 regions)
+                # Calculating Color measures
+                color_measures = []
 
-        artwork_dimensions = artwork.shape
-        # print(artwork_hsv)
-        split_index = int(artwork_dimensions[0]/2)
-        slice_1 = np.split(artwork_hsv, [split_index], 0)
-        print(len(slice_1))
-        slice_2 = []
-        # print("Slice 1 :", slice_1)
-        for i in range(len(slice_1)):
-                split_index_2 = int(slice_1[i].shape[1]/2)
-                slice_2.append(np.split(slice_1[i], [split_index_2] , 1))
+                for j in range(len(roi)):
+                        channels = cv2.split(roi[j])
+                        channel_measures = []
+                        # print(channels)
+                        for i in range(len(channels)):
+                                color_mean = 0
+                                sorted_channel = np.sort(channels[i])
+                                color_median = np.median(sorted_channel)
+                                color_std_dev = np.std(channels[i])  # Standard Deviation
+                                color_skewness = 3 * (color_mean - color_median) / color_std_dev
+                                color_mean = np.mean(channels[i])
+                                color_variance = np.var(channels[i])
+                                channel_measures.append([color_mean, color_variance, color_skewness])
 
-        roi = [slice_2[0][0], slice_2[0][1], slice_2[1][0], slice_2[1][1]]
+                        # cv2.imshow("roi", roi[j])
+                        # cv2.waitKey(0)
+                        color_measures.append(channel_measures)
+                        features.append(channel_measures)
 
-                #Calculating Color measures
-        color_measures = []
+                print("Color Measures : ", color_measures)
+                # channel_means = cv2.mean(artwork_hsv)
+                # print("Color channel_means :",channel_means)
 
-        for j in range(len(roi)):
-                channels = cv2.split(roi[j])
-                channel_measures = []
-                # print(channels)
-                for i in range(len(channels)):
-                        color_mean = 0
-                        sorted_channel = np.sort(channels[i])
-                        color_median = np.median(sorted_channel)
-                        color_std_dev = np.std(channels[i])                 #Standard Deviation
-                        color_skewness = 3*(color_mean - color_median)/color_std_dev
-                        color_mean = np.mean(channels[i])
-                        color_variance = np.var(channels[i])
-                        channel_measures.append([color_mean, color_variance, color_skewness])
+                for l in range(4):
+                        cv2.imshow("roi" + str(l), roi[l])
+                        cv2.waitKey(0)
+                        if ref_img_check == 1:
+                                cv2.imwrite(f'{ref_seg_roi_loc}roi_ref_{l}.jpg', roi[l])
+                        else:
+                                cv2.imwrite(f'{ref_seg_roi_loc}roi_test_{l}.jpg', roi[l])
 
-                # cv2.imshow("roi", roi[j])
-                # cv2.waitKey(0)
-                color_measures.append(channel_measures)
-                features.append(channel_measures)
-
-        print("Color Measures : ",color_measures)
-        # channel_means = cv2.mean(artwork_hsv)
-        # print("Color channel_means :",channel_means)
-
-        for l in range(4):
-                cv2.imshow("roi"+str(l), roi[l])
-                cv2.waitKey(0)
-                if ref_img_check == 1:
-                        cv2.imwrite(f'{roi_loc}roi_ref_{l}.jpg', roi[l])
-                else :
-                        cv2.imwrite(f'{roi_loc}roi_test_{l}.jpg', roi[l])
+        # #Color Detection
+        #
+        #         #Extract the printwork from the image or take the Output from Ishara
+        #         #Should possible give this as a parameter for the function
+        #         #Take the printwork from Piyumika with black for the background
+        #
+        # if ref_img_check == 1:
+        #         artwork = cv2.imread(ref_artwork_loc + "ref_artwork.jpg")
+        # else :
+        #         artwork = cv2.imread(test_artwork_loc + "test_artwork.jpg")
+        #
+        # artwork_hsv = cv2.cvtColor(artwork, cv2.COLOR_BGR2HSV)
+        #
+        #
+        #
+        # #Getting the contours corresponding to each segment
+        # # artwork_contours = cv2.findContours()
+        # # print(artwork_hsv.shape)
+        #         #Breaking down the image into Regions of Interest (4 regions)
+        #
+        # artwork_dimensions = artwork.shape
+        # # print(artwork_hsv)
+        # split_index = int(artwork_dimensions[0]/2)
+        # slice_1 = np.split(artwork_hsv, [split_index], 0)
+        # print(len(slice_1))
+        # slice_2 = []
+        # # print("Slice 1 :", slice_1)
+        # for i in range(len(slice_1)):
+        #         split_index_2 = int(slice_1[i].shape[1]/2)
+        #         slice_2.append(np.split(slice_1[i], [split_index_2] , 1))
+        #
+        # roi = [slice_2[0][0], slice_2[0][1], slice_2[1][0], slice_2[1][1]]
+        #
+        #         #Calculating Color measures
+        # color_measures = []
+        #
+        # for j in range(len(roi)):
+        #         channels = cv2.split(roi[j])
+        #         channel_measures = []
+        #         # print(channels)
+        #         for i in range(len(channels)):
+        #                 color_mean = 0
+        #                 sorted_channel = np.sort(channels[i])
+        #                 color_median = np.median(sorted_channel)
+        #                 color_std_dev = np.std(channels[i])                 #Standard Deviation
+        #                 color_skewness = 3*(color_mean - color_median)/color_std_dev
+        #                 color_mean = np.mean(channels[i])
+        #                 color_variance = np.var(channels[i])
+        #                 channel_measures.append([color_mean, color_variance, color_skewness])
+        #
+        #         # cv2.imshow("roi", roi[j])
+        #         # cv2.waitKey(0)
+        #         color_measures.append(channel_measures)
+        #         features.append(channel_measures)
+        #
+        # print("Color Measures : ",color_measures)
+        # # channel_means = cv2.mean(artwork_hsv)
+        # # print("Color channel_means :",channel_means)
+        #
+        # for l in range(4):
+        #         cv2.imshow("roi"+str(l), roi[l])
+        #         cv2.waitKey(0)
+        #         if ref_img_check == 1:
+        #                 cv2.imwrite(f'{roi_loc}roi_ref_{l}.jpg', roi[l])
+        #         else :
+        #                 cv2.imwrite(f'{roi_loc}roi_test_{l}.jpg', roi[l])
 
         # cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -266,12 +347,12 @@ def detect_features(no_of_segmnts, ref_img_check):
 
 
 #Fundtion usage
-ref_features = detect_features(no_of_segments, 1)
+ref_features = detect_features(no_of_matching_ref_segs, 1)
 print("Reference Image features : ", ref_features)
 print("Feature extraction finished")
 
 #Function usage
-test_features = detect_features(no_of_segments, 0)
+test_features = detect_features(no_of_matching_test_segs, 0)
 print("Test Image features : ", test_features)
 print("Feature Extraction Finished")
 
@@ -344,9 +425,9 @@ def compare_color(no_of_segments, ref_features, test_features) :
 # print(ref_features[no_of_segments+3])
 
 #Function usage
-ssr_distance, ssr_comparison_status = compare_ssr(no_of_segments, ref_features, test_features)
+ssr_distance, ssr_comparison_status = compare_ssr(no_of_matching_ref_segs, ref_features, test_features)
 
-color_distance = compare_color(no_of_segments, ref_features, test_features)
+color_distance = compare_color(no_of_matching_ref_segs, ref_features, test_features)
 
 print("Shape Scale Rotation Distance: ", ssr_distance)
 print("ROI Color Distance : ", color_distance)
