@@ -164,8 +164,6 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc):
                         # res_selected = list(res_selected)
                         # sumList = sum(res_selected)
 
-
-
                         # print("Matched Sum :", sumList,"********************************")
                         # sum_prev = sum(sum(res))
                         # print("sum : ", sum_prev)
@@ -183,8 +181,6 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc):
                                 best_tmatch = k
                 print(min_sqdiff)
                 print("Best Match : ", best_tmatch, " ***********************************************")
-
-
 
 
 def detect_features(no_of_matching_ref_segs, ref_img_check):
@@ -229,10 +225,10 @@ def detect_features(no_of_matching_ref_segs, ref_img_check):
                 #Detect Minima Maxima
                 # seg_zero_crossings, seg_point_measures = detect_minima_maxima(thresh_seg, seg)
 
-                detMinMax(thresh_seg, seg)
+                ref_seg_curvature_list = detMinMax(thresh_seg, seg)
 
                 # seg_features = [huMoments[6],huMoments[0],huMoments[1],huMoments[2],segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, seg_zero_crossings, seg_point_measures]
-                seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures]
+                seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, ref_seg_curvature_list]
                 # cv2.imshow("Init Contours", thresh_seg)
                 # cv2.waitKey(0)
 
@@ -359,8 +355,8 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 print(color_defect)
                                                         else:
                                                                 #Detect and Compare Minima and Maxima
-                                                                test_zero_crossings, test_point_measures = detect_minima_maxima(gr_test_seg_thresh, test_seg)
-
+                                                                # test_zero_crossings, test_point_measures = detect_minima_maxima(gr_test_seg_thresh, test_seg)
+                                                                test_seg_curvature_list = detMinMax(gr_test_seg_thresh, test_seg)
 
 
 
@@ -534,6 +530,7 @@ def detect_color(segment, thresholded_segment):
 def detMinMax(thresholded_segment, segment):
         print("Minima Maxima Detection")
         contours_all, hierarchy = cv2.findContours(thresholded_segment, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        # print(contours_all)
         cntAreas = []
         contours = []
         # print(contours_all)
@@ -547,6 +544,7 @@ def detMinMax(thresholded_segment, segment):
                 # print(len(cnt))
                 if (cv2.contourArea(cnt) >= cntAreaThreshold) and len(cnt) >= 20:
                         contours.append(cnt)
+                        # print(cnt)
         print("Selected Contours : ", len(contours))
         dimensions = segment.shape
         img_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
@@ -562,13 +560,92 @@ def detMinMax(thresholded_segment, segment):
 
         approxCont = []
 
+        img_approx_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
+        img_smoothed_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
+
+        # Gaussian Kernel
+        gKernel = cv2.getGaussianKernel(5, 8)
+        G = cv2.transpose(gKernel)
+
+        smoothed_set = []
+
         for k in range(len(contours)):
-                epsilon = 0.001 * cv2.arcLength(contours[k], True)
+                clen = len(contours[k])
+                print("Length of selected contour : ", clen)
+                arc_len = cv2.arcLength(contours[k], True)
+                if clen <= 50 :
+                        epsilon = 0.0007*arc_len
+                elif clen <= 100:
+                        epsilon = 0.0015 * arc_len
+                elif clen <= 300:
+                        epsilon = 0.007*arc_len
+                elif clen <= 500:
+                        epsilon = 0.0095*arc_len
+                elif clen <= 700:
+                        epsilon = 0.012*arc_len
+                elif clen <= 1000:
+                        epsilon = 0.03*arc_len
+                # epsilon = 0.001 * arc_len
+                print("Arc length is ", cv2.arcLength(contours[k], True))
                 appcnt = cv2.approxPolyDP(contours[k], epsilon, True)
                 approxCont.append(appcnt)
+                # contours[k] = appcnt
+
+                #Draw approximated contour
+                cv2.drawContours(img_approx_cont, [appcnt], 0, 255, 1)
+
+                contour_x = []
+                contour_y = []
+
+                for j in range(len(appcnt)):
+                        contour_x.append(appcnt[j].flatten()[0])
+                        contour_y.append(appcnt[j].flatten()[1])
+
+                smoothed_x = np.convolve(contour_x, G.flatten(), "same")
+                smoothed_y = np.convolve(contour_y, G.flatten(), "same")
+
+                convol_len = len(G.flatten())
+                x_len = len(smoothed_x)
+
+                # for a in range(int(convol_len / 2)):
+                        # smoothed_x[a] = appcnt[a].flatten()[0]
+                        # smoothed_y[a] = appcnt[a].flatten()[1]
+                        # smoothed_x[x_len - a - 1] = appcnt[x_len - a - 1].flatten()[0]
+                        # smoothed_y[x_len - a - 1] = appcnt[x_len - a - 1].flatten()[1]
+
+                for u in range(len(smoothed_x)):
+                        smoothed_x[u] = int(smoothed_x[u])
+                        smoothed_y[u] = int(smoothed_y[u])
+
+                smoothed_cont = []
+
+                for m in range(len(smoothed_x)):
+                        smoothed_cont.append([[smoothed_x[m], smoothed_y[m]]])
+                smoothed_cont = np.array(smoothed_cont)
+
+                # contours[k] = smoothed_cont
                 contours[k] = appcnt
+                smoothed_set.append(smoothed_cont)
+
+        # smoothed_set = cv2.UMat(np.array(smoothed_set, np.int32))
+
+
+        # Draw smoothed contours
+        # cv2.drawContours(img_smoothed_cont, smoothed_set, -1, 255, 1)
+
+
+
+
+        #Displaying approximated segment contours
+        cv2.imshow("Approximated Contours ", img_approx_cont)
+        cv2.waitKey(0)
+
+        #Displaying smoothed segment contours
+        cv2.imshow("Smoothed Contours ", img_smoothed_cont)
+        cv2.waitKey(0)
 
         diffSeqx, diffY, xAxis = detect_x_zerocrossings(contours, diffSeqx, diffY, xAxis)
+
 
         #Parameters to be passed to y zero crossings
         diffSeqy = []
@@ -577,14 +654,21 @@ def detMinMax(thresholded_segment, segment):
 
         diffSeqy, diffX, yAxis = detect_y_zerocrossings(contours, diffSeqy, diffX, yAxis)
 
+        zc_position_list, zc_location_list = getLocationList(xAxis, yAxis, contours, segment)
+        curvature_list = get_curvature(contours, zc_location_list, zc_position_list)
+        return curvature_list
+
 def detect_x_zerocrossings(contours, diffSeq, diffY, xAxis):
         # Get Zero Crossings over X axis
         for n in range(len(contours)):
+                print("Contour ", n, " length :", len(contours[n]))
                 pst = 0
                 ngt = 0
                 diffY_ct = []
                 diffSeq_ct = []
                 for i in range(len(contours[n]) - 1):
+                        # print("contours[",str(n),"]","[",str(i),"]=",contours[n][i].flatten())
+                        # print("ngt ",ngt," pst ", pst)
                         d = contours[n][i + 1].flatten()[1] - contours[n][i].flatten()[1]
                         diffY_ct.append(d)
                         if (d >= 0):
@@ -596,14 +680,18 @@ def detect_x_zerocrossings(contours, diffSeq, diffY, xAxis):
                                 ngt += 1
                                 if pst != 0:
                                         diffSeq_ct.append(pst)
+                                        pst = 0
 
                 if ngt != 0:
                         diffSeq_ct.append(ngt)
                         ngt = 0
+                        print(ngt)
                 elif pst != 0:
                         diffSeq_ct.append(pst)
                         pst = 0
+                        print(pst)
                 diffSeq.append(diffSeq_ct)
+                print("Diffseq for contour ",n ," length : ", len(diffSeq_ct))
                 # print("diffSeq ct :", diffSeq_ct)
                 diffY.append(diffY_ct)
                 # print("diffY_ct :", diffY_ct)
@@ -611,20 +699,20 @@ def detect_x_zerocrossings(contours, diffSeq, diffY, xAxis):
         print("diffY", diffY, "******************************************")
 
         for n in range(len(contours)):
-                xAxisct = []
                 # if n == 0:
                 cntr = 0
-                temp = []
+                shift = []
                 for i in range(len(diffSeq[n]) - 1):
                         if diffSeq[n][i] >= 1 and diffSeq[n][i + 1] >= 1:
-                                temp.append(cntr + diffSeq[n][i])
+                                shift.append(cntr + diffSeq[n][i])
                         cntr += diffSeq[n][i]
-                xAxis.append(temp)
+                xAxis.append(shift)
         # xAxis.append(xAxisct)
 
-        print("xAxis : ",xAxis)
+        print("xAxis : ", xAxis)
         for m in range(len(xAxis)):
                 print("Contour ", m," xz points: ", len(xAxis[m]))
+
         return diffSeq, diffY, xAxis
 
 def detect_y_zerocrossings(contours, diffSeq, diffX, yAxis):
@@ -646,6 +734,7 @@ def detect_y_zerocrossings(contours, diffSeq, diffX, yAxis):
                                 ngt += 1
                                 if pst != 0:
                                         diffSeq_ct.append(pst)
+                                        pst = 0
 
                 if ngt != 0:
                         diffSeq_ct.append(ngt)
@@ -674,155 +763,94 @@ def detect_y_zerocrossings(contours, diffSeq, diffX, yAxis):
                 print("Contour ", m," yz points: ", len(yAxis[m]))
         return diffSeq, diffX, yAxis
 
-def sortXYarrays(xAxis, yAxis, contours):
+def getLocationList(xAxis, yAxis, contours, segment):
         position_List = []
+        locationList = []
 
         for n in range(len(contours)):
-                xyList_ct = xAxis[n] + yAxis[n]
+                # posList_ct = xAxis[n] + yAxis[n]
+                posList_ct = []
+                arrlenX = len(xAxis[n])
+                arrlenY = len(yAxis[n])
 
+                # xAxis = np.array(xAxis)
+                # yAxis = np.array(yAxis)
 
+                if arrlenX >= arrlenY:
+                        for p in range(len(yAxis[n])):
+                                if xAxis[n][p] not in yAxis[n]:
+                                        posList_ct.append(xAxis[n][p])
+                                        posList_ct.append(yAxis[n][p])
+                                else:
+                                        posList_ct.append(xAxis[n][p])
+                        remaining = arrlenX - arrlenY
+                        if remaining != 0:
+                                for p in range(arrlenY,arrlenX):
+                                        posList_ct.append(xAxis[n][p])
+                else:
+                        for p in range(len(xAxis[n])):
+                                if yAxis[n][p] not in xAxis[n]:
+                                        posList_ct.append(xAxis[n][p])
+                                        posList_ct.append(yAxis[n][p])
+                                else:
+                                        posList_ct.append(xAxis[n][p])
+                        remaining = arrlenY - arrlenX
+                        if remaining != 0:
+                                for p in range(arrlenX,arrlenY):
+                                        posList_ct.append(yAxis[n][p])
 
-#Minima Maxima Detection
-def detect_minima_maxima(thresholded_segment,segment):
-        print("Minima Maxima Detection")
-        contours_all, hierarchy = cv2.findContours(thresholded_segment, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        cntAreas = []
-        contours = []
-        # print(contours_all)
-        print("Total contours discovered :",len(contours_all))
-        for cnt in contours_all:
-                cntAreas.append(cv2.contourArea(cnt))
-        cntAreas = sorted(cntAreas)
-        cntAreaThreshold = max(cntAreas)*0.0008
-        # print(cntAreas)
-        for cnt in contours_all:
-                # print(len(cnt))
-                if (cv2.contourArea(cnt) >= cntAreaThreshold) and len(cnt) >= 20:
-                        contours.append(cnt)
-        print("Selected Contours : ", len(contours))
-        dimensions = segment.shape
-        img_cont = np.zeros((dimensions[0],dimensions[1],1),np.uint8)*255
-        cv2.drawContours(img_cont, contours, -1, 255, 1)
+                posList_ct = sorted(posList_ct)
+                position_List.append(posList_ct)
+                locList_ct = []
+                print("posList_ct length ", len(posList_ct))
+                print("Contour ", n, " length ", len(contours[n]))
+                for pos in range(len(posList_ct)):
+                        # print("Position :",pos)
+                        loc = [contours[n][pos].flatten()[0], contours[n][pos].flatten()[1]]
+                        locList_ct.append(loc)
+                        cv2.line(segment, (int(loc[0]),int(loc[1])), (int(loc[0]),int(loc[1])), (128,255,0), 6)
+                locationList.append(locList_ct)
 
-        cv2.imshow("Init Contours", img_cont)
+        cv2.imshow("Detected Points ", segment)
         cv2.waitKey(0)
 
-        #Appoximating the contour to the closest polygon
-        approx = []
-        smoothed_curves = []
-        all_seg_point_measures = []
-        all_seg_zero_crossing_pts = []
-
-        for i in range(len(contours)):
-                        epsilon = 0.001*cv2.arcLength(contours[i], True)
-                        approx.append(cv2.approxPolyDP(contours[i], epsilon, True))
-                        # print("Reached", len(contours[i]))
-                        x = []
-                        y = []
-
-                        #Gaussian Kernel
-                        gKernel = cv2.getGaussianKernel(5, 8)
-                        G = cv2.transpose(gKernel)
-                        s_kernel = np.array([1, -1])
-                        ss_kernel = np.array([1, -2, 1])
-
-                        G_s = np.convolve(G.flatten(), s_kernel.flatten(), "same")
-                        G_ss = np.convolve(G.flatten(), ss_kernel.flatten(), "same")
-
-                        for j in range(len(approx[i])):
-                                        # print("Cont"+str(j))
-                                        x.append(approx[i][j].flatten()[0])
-                                        y.append(approx[i][j].flatten()[1])
-
-                        smoothed_curve_x = np.convolve(x, G.flatten(), "same")
-                        smoothed_curve_y = np.convolve(y, G.flatten(), "same")
-                        # print("x array",smoothed_curve_x)
-                        # print("y array",smoothed_curve_y)
+        return position_List, locationList
 
 
-                        convol_len = len(G.flatten())
-                        x_len = len(smoothed_curve_x)
-                        # print("smoothed curve x length : ",x_len)
-                        y_len = len(smoothed_curve_y)
-                        for a in range(int(convol_len/2)):
-                                smoothed_curve_x[a] = approx[i][a].flatten()[0]
-                                smoothed_curve_y[a] = approx[i][a].flatten()[1]
-                                smoothed_curve_x[x_len - a - 1] = approx[i][x_len - a - 1].flatten()[0]
-                                smoothed_curve_y[x_len - a - 1] = approx[i][x_len - a - 1].flatten()[1]
+def get_curvature(contourList, locationList, posList):
+        curvature_list = []
+        for n in range(len(locationList)):
+                # loc, locPrev, locOlder = 0
+                curvature_ct = []
+                for i in range(len(locationList[n])):
+                        pos = posList[n][i]
+                        if i == 0:
+                                loc = contourList[n][pos].flatten()
+                                locPrev = contourList[n][pos].flatten()
+                                locOlder = contourList[n][pos].flatten()
+                        elif i == 1:
+                                loc = contourList[n][pos].flatten()
+                                locPrev = contourList[n][pos - 1].flatten()
+                                locOlder = contourList[n][pos - 1].flatten()
+                        else:
+                                loc = contourList[n][i].flatten()
+                                locPrev = contourList[n][pos-1].flatten()
+                                locOlder = contourList[n][pos-2].flatten()
+                        #First Partial Derivatives
+                        gx = loc[0] - locPrev[0]
+                        ggx = -loc[0] + 2*locPrev[0] - locOlder[0]
 
-                        for u in range(len(smoothed_curve_x)):
-                                smoothed_curve_x[u] = int(smoothed_curve_x[u])
-                                smoothed_curve_y[u] = int(smoothed_curve_y[u])
+                        #Second Partial Derivatives
+                        gy = loc[1] - locPrev[1]
+                        ggy = -loc[1] + 2*locPrev[1] - locOlder[1]
 
-                        #Partial Derivative Values
-                        smoothed_curve_xs = np.convolve(smoothed_curve_x, s_kernel.flatten(), "same")
-                        smoothed_curve_ys = np.convolve(smoothed_curve_y, s_kernel.flatten(), "same")
-                        smoothed_curve_xss = np.convolve(smoothed_curve_x, ss_kernel.flatten(), "same")
-                        smoothed_curve_yss = np.convolve(smoothed_curve_y, ss_kernel.flatten(), "same")
-
-                        smoothed_curve = []
-                        for j in range(len(smoothed_curve_x)):
-                                smoothed_curve.append([[smoothed_curve_x[j], smoothed_curve_y[j]]])
-
-                        smoothed_curve = np.array(smoothed_curve)
-                        # print(smoothed_curve)
-                        smoothed_curves.append(smoothed_curve)
-
-
-                        #Applying Curvature Scale Space Derived Method
-                        zero_crossing_pts = []
-                        kappa = ((smoothed_curve_xs*smoothed_curve_yss)-(smoothed_curve_xss*smoothed_curve_ys))/(smoothed_curve_xs**2 + smoothed_curve_ys**2)**1.5
-
-                        seg_point_measures = []
-                        for r in range(len(kappa)):
-                                # if kappa[r] <= 0.0005 and kappa[r] >= -0.0005:
-                                if kappa[r] == 0:
-                                        z_point = [int(smoothed_curve[r].flatten()[0]), int(smoothed_curve[r].flatten()[1])]
-                                        zero_crossing_pts.append(z_point)
-                                        if (smoothed_curve_xs[r] + smoothed_curve_ys[r])**3 != 0 :
-                                                seg_point_measures.append((smoothed_curve_xs - smoothed_curve_ys)**2/(smoothed_curve_xs[r] + smoothed_curve_ys[r])**3)
-
-                                        else:
-                                                seg_point_measures.append((smoothed_curve_xs - smoothed_curve_ys)**2)
-                                        cv2.line(segment, (z_point[0],z_point[1]), (z_point[0],z_point[1]), (255,0,0), 5)
-
-
-                        all_seg_zero_crossing_pts.append(zero_crossing_pts)
-                        all_seg_point_measures.append(seg_point_measures)
-        # print(len(smoothed_curves))
-
-
-
-
-
-
-        #Visualizing smoothed approximated contours
-
-        smoothed_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
-        # cv2.drawContours(smoothed_cont, smoothed_curves, -1, 255, 1)
-
-        # Visualizing approximated contours
-        approx_cont_visual = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
-        cv2.drawContours(approx_cont_visual, approx, -1, 255, 1)
-
-        # Display Original Contours
-        cv2.imshow("Original segment contours", img_cont)
-        cv2.waitKey(0)
-
-        #Display Approximated Contours
-        cv2.imshow("Approximated Contours", approx_cont_visual)
-        cv2.waitKey(0)
-
-        # #Display Smoothed Contours
-        # cv2.imshow("Smoothed Contours", smoothed_cont)
-        # cv2.waitKey(0)
-
-        #Display Points
-        cv2.imshow("Detected Points", segment)
-        cv2.waitKey(0)
-
-        return all_seg_zero_crossing_pts, all_seg_point_measures
-
+                        if (ggx + ggy)**3 ==0:
+                                curvature = abs((gx - gy)**2)
+                        else:
+                                curvature = abs((gx - gy)/(ggx + ggy)**3)
+                        curvature_ct.append(curvature)
+                curvature_list.append(curvature_ct)
+        return curvature_list
 
 
 
