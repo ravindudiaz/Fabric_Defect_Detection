@@ -521,28 +521,28 @@ class App():
         # self.deleteGeneratedFiles(texArtworks)
 
         # param : input folder,output folder
-        # self.removeOuterBackground(refUniformfolder,outerRemovedRefUniformfolder)
-        # self.removeOuterBackground(uniformfolder,outerRemovedUniformfolder)
+        self.removeOuterBackground(refUniformfolder,outerRemovedRefUniformfolder)
+        self.removeOuterBackground(uniformfolder,outerRemovedUniformfolder)
 
         # param : input two folders,output folder
-        # self.registratedMachingFiles(outerRemovedUniformfolder,outerRemovedRefUniformfolder,uniformRegistrated)
+        self.registratedMachingFiles(outerRemovedUniformfolder,outerRemovedRefUniformfolder,uniformRegistrated)
 
         # param : input folder,output folder
-        # self.generateUniformFabricEdge(outerRemovedRefUniformfolder,edge)
-        # self.generateUniformFabricEdge(uniformRegistrated,edge)
+        self.generateUniformFabricEdge(outerRemovedRefUniformfolder,edge)
+        self.generateUniformFabricEdge(uniformRegistrated,edge)
 
         # param : input folder,output folder
-        # self.generateUniformArtWorkMask(edge,artworksMasks)
+        self.generateUniformArtWorkMask(edge,artworksMasks)
 
         # param : input two folders,output folder
-        # self.isolateUniformFabArtwork(outerRemovedRefUniformfolder,artworksMasks,artworks)
-        # self.isolateUniformFabArtwork(uniformRegistrated,artworksMasks,artworks)
+        self.isolateUniformFabArtwork(outerRemovedRefUniformfolder,artworksMasks,artworks)
+        self.isolateUniformFabArtwork(uniformRegistrated,artworksMasks,artworks)
 
-        self.removeOuterBackground(texturedfolder,outerRemovedTexturedfolder)
-        # self.generateteTexturedArtworkDarft(texturedSamples,outerRemovedTexturedfolder,texArtworksDrafts)
-        # self.sharpTexturedArtworkDraft(texArtworksDrafts)
-        # self.generateteTexturedArtworkMask(texArtworksDrafts,texArtworksMasks)
-        # self.isolateUniformFabArtwork(outerRemovedTexturedfolder,texArtworksMasks,texArtworks)
+        # self.removeOuterBackground(texturedfolder,outerRemovedTexturedfolder)
+        self.generateteTexturedArtworkDarft(texturedSamples,outerRemovedTexturedfolder,texArtworksDrafts)
+        self.sharpTexturedArtworkDraft(texArtworksDrafts)
+        self.generateteTexturedArtworkMask(texArtworksDrafts,texArtworksMasks)
+        self.isolateUniformFabArtwork(outerRemovedTexturedfolder,texArtworksMasks,texArtworks)
 
 if __name__ == '__main__':
     # print(__doc__)
