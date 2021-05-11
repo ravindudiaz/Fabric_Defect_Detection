@@ -443,7 +443,7 @@ class BRModule():
         artworksTestImages = 'Assets/BR_Module/Output/artworks_test'
 
         #creating output folders if not exists
-        print("Creating directories for output images...")
+        print("Creating directories for output images..")
         try:
             if not path.exists(outerRemReferenceImages):
                 os.makedirs(outerRemReferenceImages)
