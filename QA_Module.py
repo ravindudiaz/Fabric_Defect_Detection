@@ -31,162 +31,12 @@ no_of_nonmatching_ref_segs = len(nmr_file_list)
 nmt_file_list = os.listdir(nonmatching_test_loc)
 no_of_nonmatching_test_segs = len(nmt_file_list)
 
-def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc):
-        print("Segment Matching Started...........................................................")
-        print(nm_test_loc)
-
-        for i in range(no_of_nonmatching_test_segs):
-
-                #Get non matching segment
-                print("Non Matching Test Segment "+str(i)+ " :")
-                seg_nmt =  cv2.imread(nm_test_loc+"nm_"+str(i)+".jpg")
-                seg_nmtg = cv2.cvtColor(seg_nmt, cv2.COLOR_BGR2GRAY)
-                # cv2.imshow("nmt gray", seg_nmtg)
-                # cv2.waitKey(0)
-                ret1, nmt_thresh = cv2.threshold(seg_nmtg , 4, 255, cv2.THRESH_BINARY)
-
-                x = []
-                y = []
-
-                nz = np.argwhere(nmt_thresh != 0)
-                for pt in nz:
-                        x.append(pt[0])
-                        y.append(pt[1])
-
-                template = seg_nmtg[min(x): max(x), min(y):max(y)]
-                # print(min(y), max(y), min(x),max(x))
-                # cv2.imshow("Template", template)
-                # cv2.waitKey(0)
-
-                #SIFT for nonmatching test seg
-                sift = cv2.SIFT_create()
-                kpt, dest = sift.detectAndCompute(template, None)
-
-                max_inlier_points = 0
-                best_match = 0
-
-                #For Template Matching
-                min_sqdiff_sum = 0
-                best_tmatch = 0
-                min_sqdiff = 0
-                sqdiff = []
-
-                #Get Matching  Ref segment
-                for j in range(no_of_matching_ref_segs):
-                        print("Matching Ref Segment "+str(j)+" :")
-                        seg_ref =  cv2.imread(m_ref_loc+"m_"+str(j)+".jpg")
-                        seg_refg = cv2.cvtColor(seg_ref, cv2.COLOR_BGR2GRAY)
-                        # cv2.imshow("ref gray", seg_refg)
-                        # cv2.waitKey(0)
-                        ret2, ref_thresh = cv2.threshold(seg_refg, 4, 255, cv2.THRESH_BINARY)
-
-                #         # SIFT and FLANN Based
-                #         #SIFT for ref seg
-                #         kpr, desr = sift.detectAndCompute(seg_refg, None)
-                #         print(len(kpr), len(kpt))
-                #         # for d in dest:
-                #         #         print(dest)
-                #
-                #
-                #
-                #         if(len(kpr) >= len(kpt)):
-                #                 # bf = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_BRUTEFORCE_HAMMING)
-                #                 flann = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
-                #                 matches = flann.match(dest, desr)
-                #                 print(len(matches))
-                #
-                #                 matches = sorted(matches, key=lambda x: x.distance)
-                #                 # matches = matches[:int(len(matches)*4/5)]
-                #                 print("Threshold clue : ",matches[len(matches)-1].distance)
-                #                 # matches = list(filter(lambda x: x.distance <= matches[len(matches)-1].distance*4/5, matches))
-                #                 matches = list(filter(lambda x: x.distance <= 250, matches))
-                #                 print(type(matches))
-                #                 total_dist = 0
-                #                 for m in matches:
-                #                         # print(m.distance)
-                #                         total_dist += m.distance
-                #
-                #                 print("Match Distance : ",total_dist)
-                #                 points1 = np.zeros((len(matches), 2), dtype=np.float32)
-                #                 points2 = np.zeros((len(matches), 2), dtype=np.float32)
-                #
-                #                 for l,match in enumerate(matches):
-                #                         points1[l, :] = kpt[match.queryIdx].pt
-                #                         points2[l, :] = kpr[match.queryIdx].pt
-                #
-                #                 h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
-                #                 # print(mask)
-                #                 # seg_reg = cv2.warpPerspective()
-                #
-                #                 matching_result = cv2.drawMatches(template, kpt, seg_ref, kpr, matches[:20], None)
-                #
-                #                 cv2.imshow("Matching result", matching_result)
-                #                 cv2.waitKey(0)
-                #
-                #                 inl = 0
-                #                 for x in mask:
-                #                         if x == [1]:
-                #                                 inl += 1
-                #                 print("Inliers" , inl)
-                #                 if inl >= max_inlier_points:
-                #                         max_inlier_points = inl
-                #                         best_match = j
-                # print("Max Inlier Points :" + str(max_inlier_points))
-                # print("Best Match :" + str(best_match)+"  **********************************")
-
-                        #Template
-                        res = cv2.matchTemplate(seg_refg, template, cv2.TM_SQDIFF)
-                        # print(res)
-                        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-                        th, tw = template.shape[::]
-                        top_left = min_loc
-                        bottom_right = (top_left[0]+tw, top_left[1]+th)
-                        cv2.rectangle(seg_refg, top_left, bottom_right, 255, 2)
-                        # plt.imshow(res, cmap='gray')
-
-                        res_np = np.array(res)
-                        res_pos = np.argwhere(seg_refg)
-                        # print(res_pos)
-                        # sqdiff_sum = sum(sum(res))
-                        min_res = np.min(res)
-                        print("Minimum distance value in res : ", min_res)
-                        # print("Segment sqdiff sum : " ,sqdiff_sum)
-
-                        # if min_sqdiff > min_res:
-                        #         # min_sqdiff_sum = min_res
-                        #         min_sqdiff = min_res
-                        #         best_tmatch = j
-
-                        sqdiff.append(min_res)
-
-                        # res_selected = res_np[res_np != (1.1370468e+09 or 1.1370469e+09)]
-                        # print(res_selected)
-                        # res_selected = list(res_selected)
-                        # sumList = sum(res_selected)
-
-                        # print("Matched Sum :", sumList,"********************************")
-                        # sum_prev = sum(sum(res))
-                        # print("sum : ", sum_prev)
-                        # cv2.imshow("ref gray template matched", seg_refg)
-                        # cv2.waitKey(0)
-
-                        sh = seg_ref.shape[0]
-                        sw = seg_ref.shape[1]
-                        # print(str(sh*sw))
-                        # print(len(res[0]) * len(res))
-                sorted_sqdiff = sorted(sqdiff)
-                min_sqdiff = sorted_sqdiff[0]
-                for k in range(len(sqdiff)):
-                        if sqdiff[k] == min_sqdiff:
-                                best_tmatch = k
-                print(min_sqdiff)
-                print("Best Match : ", best_tmatch, " ***********************************************")
-
 
 def detect_features(no_of_matching_ref_segs, ref_img_check):
         print("Reference Image Feature Extraction Started.........................................")
 
         ref_features=[]
+        thresholded_segments = []
 
         for i in range(no_of_matching_ref_segs):
                 print("Reference Image Segment ", str(i))
@@ -225,19 +75,23 @@ def detect_features(no_of_matching_ref_segs, ref_img_check):
                 #Detect Minima Maxima
                 # seg_zero_crossings, seg_point_measures = detect_minima_maxima(thresh_seg, seg)
 
-                ref_seg_curvature_list = detMinMax(thresh_seg, seg)
+                # ref_seg_curvature_list = detMinMax(thresh_seg, seg)
 
                 # seg_features = [huMoments[6],huMoments[0],huMoments[1],huMoments[2],segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, seg_zero_crossings, seg_point_measures]
-                seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, ref_seg_curvature_list]
+                # seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, ref_seg_curvature_list]
+                seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures]
                 # cv2.imshow("Init Contours", thresh_seg)
                 # cv2.waitKey(0)
 
                 ref_features.append(seg_features)
+                thresholded_segments.append(thresh_seg)
         # print(ref_features)
-        return ref_features
+        return ref_features, thresholded_segments, dimensions
 
-def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check):
+def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions):
         print("Detect and Match test image stage reached...........................")
+
+        no_def_segs = 0
 
         for i in range(no_of_matching_test_segs):
                 print(no_of_matching_test_segs)
@@ -257,6 +111,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                         }
                         print(shape_defect)
                         shape_defect_json = json.dumps(shape_defect)
+                        no_def_segs += 1
                 else:
                         #shape_deviation_measure
                         shape_deviation = ((ref_features[i][1]-huMoments[0])**2 + (ref_features[i][2]-huMoments[1])**2 + (ref_features[i][3]-huMoments[2])**2 )/(ref_features[i][1]+ref_features[i][2]+ref_features[i][3])
@@ -268,6 +123,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                         "type": "Shape Defect",
                                         "status" : "Shape deviation = "+str(shape_deviation)+". Exceeded threshold."
                                 }
+                                no_def_segs += 1
                                 shape_defect_json = json.dumps(shape_defect)
                         else:
                                 #Detect and Compare Size
@@ -281,6 +137,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 "type": "Size Defect",
                                                 "status" : "Size Deviation = " + str(size_deviation)+ ". Exceeded threshold. "
                                         }
+                                        no_def_segs += 1
                                         size_defect_json = json.dumps(size_defect)
                                 else:
                                         #Detect and Compare Rotation
@@ -295,6 +152,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                         "type": "Rotation Defect",
                                                         "status": "Size Deviation " + str(rotation_deviation) + ". Exceeded threshold. "
                                                 }
+                                                no_def_segs += 1
                                                 rotation_defect_json = json.dumps(rotation_defect)
                                         else:
                                                 #Detect and Compare Placement
@@ -315,6 +173,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 "status" : "Placement measure deviation "+ str(total_deviation) + " . Exceeded threshold"
                                                         }
                                                         placement_defect_json = json.dumps(placement_defect)
+                                                        no_def_segs += 1
                                                 else:
                                                         #Detect and Compare Color
                                                         ret1, gr_test_seg_thresh = cv2.threshold(gr_test_seg, 40, 255, cv2.THRESH_BINARY)
@@ -351,17 +210,96 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                         "status": "Color deviation occurred in rois : " + str(color_def_roi)
 
                                                                 }
+                                                                no_def_segs += 1
                                                                 shape_defect_json = json.dumps(color_defect)
                                                                 print(color_defect)
                                                         else:
                                                                 #Detect and Compare Minima and Maxima
                                                                 # test_zero_crossings, test_point_measures = detect_minima_maxima(gr_test_seg_thresh, test_seg)
-                                                                test_seg_curvature_list = detMinMax(gr_test_seg_thresh, test_seg)
+                                                                # test_seg_curvature_list = detMinMax(gr_test_seg_thresh, test_seg)
+                                                                defected_contours = detMinMax2(reference_thresh_segs, gr_test_seg_thresh, ref_dimensions, segmentContourArea, i)
+
+                                                                minmax_img = test_seg
+                                                                if len(defected_contours)!=0:
+                                                                        cv2.drawContours(minmax_img, defected_contours, -1, (0,128,255), cv2.FILLED)
+                                                                        no_def_segs += 1
+        print(no_def_segs)
 
 
+#MinMax2
+def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
+        print("MinMax2...", n)
+
+        #For the ref seg
+        # ref_dimensions = ref_thresh_segs[n].shape
+        print(ref_dimensions)
+        ref = resize_segments(ref_thresh_segs[n], ref_dimensions)
+        # cv2.imshow("ref",ref)
+        # cv2.waitKey(0)
+
+        #For the test seg
+
+        # cv2.imshow("original tseg ", tseg_thresh)
+        # cv2.waitKey(0)
+        test_dimensions = tseg_thresh.shape
+        # print(test_dimensions)
+        test = resize_segments(tseg_thresh, ref_dimensions)
+        # cv2.imshow("test", test)
+        # cv2.waitKey(0)
+
+        diff_image = ref - test
+
+        diff_image = cv2.merge((diff_image, diff_image, diff_image))
+        diff_image = cv2.cvtColor(diff_image, cv2.COLOR_BGR2GRAY)
+        # cv2.imshow("Diff Image ", diff_image)
+        # cv2.waitKey(0)
+        gauss_diff = cv2.GaussianBlur(diff_image,(7,15), cv2.BORDER_DEFAULT)
+        # cv2.imshow("Gauss Diff Image ", gauss_diff)
+        # cv2.waitKey(0)
+
+        _, thresh_gdiff= cv2.threshold(gauss_diff, 254, 255, cv2.THRESH_BINARY)
+        # cv2.imshow("Gauss Diff Image Thresh", thresh_gdiff)
+        # cv2.waitKey(0)
+
+        cont_arr, hierarchy = cv2.findContours(thresh_gdiff, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+        def_contours = []
+        for cnt in cont_arr:
+                cnt_area = cv2.contourArea(cnt)
+                if cnt_area/segmentArea >=0.008:
+                        def_contours.append(cnt)
+
+        return def_contours
 
 
+def resize_segments(thr_seg, ref_dimensions):
+        nz_locs = np.argwhere(thr_seg)
+        # print(nz_locs)
+        x_arr = []
+        y_arr = []
+        for loc in nz_locs:
+                x_arr.append(loc[0])
+                y_arr.append(loc[1])
+        x_arr = sorted(x_arr)
+        y_arr = sorted(y_arr)
 
+        x_min = x_arr[0]
+        x_max = x_arr[len(x_arr)-1]
+        y_min = y_arr[0]
+        y_max = y_arr[len(y_arr)-1]
+
+        crop_seg = thr_seg[ y_min:y_max , x_min:x_max ]
+        # cv2.imshow("Cropped ", crop_seg)
+        # cv2.waitKey(0)
+
+        bg = np.zeros((ref_dimensions[0], ref_dimensions[1]), np.uint8) * 255
+        x_offset = y_offset = 20
+
+        bg[y_offset: y_offset + crop_seg.shape[0], x_offset: x_offset + crop_seg.shape[1]] = crop_seg
+        # cv2.imshow("Prepped ", bg)
+        # cv2.waitKey(0)
+
+        return bg
 
 
 
@@ -856,8 +794,8 @@ def get_curvature(contourList, locationList, posList):
 
 #Function Usage
 # match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc)
-ref_features = detect_features(no_of_matching_ref_segs, 1)
-detect_and_compare_matching_segments(no_of_matching_test_segs, ref_features, 1)
+ref_features, ref_thresholded_segs, ref_dimensions = detect_features(no_of_matching_ref_segs, 1)
+detect_and_compare_matching_segments(no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions)
 
 
 
