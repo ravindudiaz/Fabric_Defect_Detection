@@ -93,6 +93,14 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
         no_def_segs = 0
 
+        shape_def = []
+        color_def = []
+        placement_def = []
+        rotation_def = []
+        size_def = []
+        minmax_def = []
+
+
         for i in range(no_of_matching_test_segs):
                 print(no_of_matching_test_segs)
 
@@ -112,6 +120,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                         print(shape_defect)
                         shape_defect_json = json.dumps(shape_defect)
                         no_def_segs += 1
+                        shape_def.append([i, test_seg])
                 else:
                         #shape_deviation_measure
                         shape_deviation = ((ref_features[i][1]-huMoments[0])**2 + (ref_features[i][2]-huMoments[1])**2 + (ref_features[i][3]-huMoments[2])**2 )/(ref_features[i][1]+ref_features[i][2]+ref_features[i][3])
@@ -124,6 +133,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                         "status" : "Shape deviation = "+str(shape_deviation)+". Exceeded threshold."
                                 }
                                 no_def_segs += 1
+                                shape_def.append([i, test_seg])
                                 shape_defect_json = json.dumps(shape_defect)
                         else:
                                 #Detect and Compare Size
@@ -138,6 +148,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 "status" : "Size Deviation = " + str(size_deviation)+ ". Exceeded threshold. "
                                         }
                                         no_def_segs += 1
+                                        size_def.append([i, test_seg])
                                         size_defect_json = json.dumps(size_defect)
                                 else:
                                         #Detect and Compare Rotation
@@ -154,6 +165,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 }
                                                 no_def_segs += 1
                                                 rotation_defect_json = json.dumps(rotation_defect)
+                                                rotation_def.append([i, test_seg])
                                         else:
                                                 #Detect and Compare Placement
                                                 test_img_dimensions = test_seg.shape
@@ -174,6 +186,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                         }
                                                         placement_defect_json = json.dumps(placement_defect)
                                                         no_def_segs += 1
+                                                        placement_def.append([i, test_seg])
                                                 else:
                                                         #Detect and Compare Color
                                                         ret1, gr_test_seg_thresh = cv2.threshold(gr_test_seg, 40, 255, cv2.THRESH_BINARY)
@@ -190,6 +203,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                         # print(rm[l][0][0])
                                                                         # print(tm[l][0][0])
                                                                         channel_dev = (rm[l][0][0] - tm[l][0][0])**2 + (rm[l][0][1] - tm[l][0][1])**2 + (rm[l][0][2] - tm[l][0][2])**2
+                                                                        channel_dev = channel_dev/ (rm[l][0][0]**2 + rm[l][0][1]**2 + rm[l][0][2]**2)
                                                                         # channel_dev = rm[l][0][0] + tm[l][0][0]
                                                                         roi_deviations.append(channel_dev)
                                                                 # print(roi_deviations)
@@ -197,8 +211,8 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                         # print(len(all_roi_deviations))
                                                         print(all_roi_deviations)
 
-                                                        # Tcol = 0.015
-                                                        Tcol = 10000000
+                                                        Tcol = 0.09
+                                                        # Tcol = 10000000
                                                         color_def_roi = []
                                                         for b in range(len(all_roi_deviations)):
                                                                 for bi in range(len(all_roi_deviations[b])):
@@ -210,7 +224,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                         "status": "Color deviation occurred in rois : " + str(color_def_roi)
 
                                                                 }
+
                                                                 no_def_segs += 1
+                                                                color_def.append([i, test_seg])
                                                                 shape_defect_json = json.dumps(color_defect)
                                                                 print(color_defect)
                                                         else:
@@ -223,7 +239,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 if len(defected_contours)!=0:
                                                                         cv2.drawContours(minmax_img, defected_contours, -1, (0,128,255), cv2.FILLED)
                                                                         no_def_segs += 1
-        print(no_def_segs)
+                                                                        minmax_def.append([i, test_seg])
+        print("Number of defected segemnts : ",no_def_segs)
+        return shape_def, size_def, placement_def, rotation_def, color_def
 
 
 #MinMax2
@@ -502,7 +520,7 @@ def detMinMax(thresholded_segment, segment):
         img_smoothed_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
 
         # Gaussian Kernel
-        gKernel = cv2.getGaussianKernel(5, 8)
+        gKernel = cv2.getGaussianKernel(3, 2)
         G = cv2.transpose(gKernel)
 
         smoothed_set = []
@@ -561,7 +579,7 @@ def detMinMax(thresholded_segment, segment):
                         smoothed_cont.append([[smoothed_x[m], smoothed_y[m]]])
                 smoothed_cont = np.array(smoothed_cont)
 
-                # contours[k] = smoothed_cont
+                contours[k] = smoothed_cont
                 contours[k] = appcnt
                 smoothed_set.append(smoothed_cont)
 
@@ -790,12 +808,25 @@ def get_curvature(contourList, locationList, posList):
                 curvature_list.append(curvature_ct)
         return curvature_list
 
+def display_arr(arr, type):
+        def_count = []
+        for a in arr:
+                def_count.append(a[0])
+        print(str(type) + " defect segments : ", def_count)
 
 
 #Function Usage
 # match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc)
 ref_features, ref_thresholded_segs, ref_dimensions = detect_features(no_of_matching_ref_segs, 1)
-detect_and_compare_matching_segments(no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions)
+shape_def, size_def, placement_def, rotation_def, color_def = detect_and_compare_matching_segments(no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions)
+
+display_arr(shape_def, "Shape")
+display_arr(size_def, "Size")
+display_arr(placement_def,"Placement")
+display_arr(rotation_def,"Rotation")
+display_arr(color_def,"Color")
+
+
 
 
 
