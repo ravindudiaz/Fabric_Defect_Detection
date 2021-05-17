@@ -9,7 +9,7 @@ from os import path
 class BRModule():
 
     rect = (0,0,1,1)
-    resizeMark = 1500
+    resizeMark = 2100
     resizerVal = .3
     
     def removeOuterBackground(self,folder,saveFolder):
@@ -22,7 +22,9 @@ class BRModule():
             height = img.shape[0]
             width = img.shape[1]
 
-            if height > self.resizeMark or width > self.resizeMark :
+            if width > self.resizeMark :
+                self.resizerVal = self.resizeMark/width
+
                 img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal)
 
             # create copy of image
@@ -154,7 +156,8 @@ class BRModule():
         self.mask[newmask == 0] = 0
         self.mask[newmask == 255] = 1
 
-        # nameWithMask = "fabric_masks/Mask_"+name        
+        # nameWithMask = "ref_masks/Mask_"+name
+        # nameWithMask = "test_masks/Mask_"+name      
         # cv.imwrite(nameWithMask, newmask)
 
 
@@ -201,7 +204,7 @@ class BRModule():
             # mask[newmask == 0] = 0
             # mask[newmask == 255] = 1
 
-            nameWithMask = saveFolder+"/Mask_"+filename        
+            nameWithMask = saveFolder+"/"+filename        
             cv.imwrite(nameWithMask, image_binary)
 
 
@@ -238,8 +241,8 @@ class BRModule():
                 height = img.shape[0]
                 width = img.shape[1]
 
-                if height > self.resizeMark or width > self.resizeMark :
-                    img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal)
+                # if height > self.resizeMark or width > self.resizeMark :
+                #     img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal)
 
                 # create copy of image
                 img = img.copy()
@@ -402,6 +405,23 @@ class BRModule():
 
             Image.fromarray(img).save(saveFileName)
 
+    def generateteFabricMask(self,folder,saveFolder):
+
+        for filename in os.listdir(folder):
+
+            editedFileName = folder +'/'+ filename
+            
+            img = np.array(Image.open(editedFileName).convert('L'))
+
+            img = cv.normalize(img, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
+            res, img = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
+
+            cv.floodFill(img, None, (0,0), 0)
+
+            saveFileName = saveFolder +'/'+ filename
+
+            Image.fromarray(img).save(saveFileName)
+
 
 
     def run(self):
@@ -442,6 +462,10 @@ class BRModule():
         artworksReferenceImages = 'Assets/BR_Module/Output/artworks_ref'
         artworksTestImages = 'Assets/BR_Module/Output/artworks_test'
 
+        #To store final output,include fabric artworks(Reference/Test)
+        fabricMasksRef = 'Assets/BR_Module/Output/fabric_masks_ref'
+        fabricMasksTest = 'Assets/BR_Module/Output/fabric_masks_test'
+
         #creating output folders if not exists
         print("Creating directories for output images..")
         try:
@@ -478,6 +502,12 @@ class BRModule():
             if not path.exists(artworksTestImages):
                 os.makedirs(artworksTestImages)
 
+            if not path.exists(fabricMasksRef):
+                os.makedirs(fabricMasksRef)
+
+            if not path.exists(fabricMasksTest):
+                os.makedirs(fabricMasksTest)
+
         except:
             import traceback
             traceback.print_exc()
@@ -494,6 +524,8 @@ class BRModule():
         self.deleteGeneratedFiles(artworkMasksTestImages)
         self.deleteGeneratedFiles(artworksReferenceImages)
         self.deleteGeneratedFiles(artworksTestImages)
+        self.deleteGeneratedFiles(fabricMasksRef)
+        self.deleteGeneratedFiles(fabricMasksTest)
 
         print("Removing outer backgrounds...")
         #Remove outer background of reference images
@@ -504,6 +536,11 @@ class BRModule():
         #Registrated test images using reference point
         print("Image Registrating...")
         self.registratedMachingFiles(outerRemReferenceImages,outerRemTestImages,registratedTestImages)
+
+        #Creating uniform artwork mask
+        print("Creating fabric masks...")
+        self.generateteFabricMask(outerRemReferenceImages,fabricMasksRef)
+        self.generateteFabricMask(registratedTestImages,fabricMasksTest)
 
         #Creating uniform fabric edges
         print("Creating uniform fabric edges...")
