@@ -10,8 +10,8 @@ matching_ref_loc ="./Assets/Seg_Module/Output/Matching/ref/"
 matching_test_loc = "./Assets/Seg_Module/Output/Matching/test/"
 nonmatching_ref_loc = "./Assets/Seg_Module/Output/Non_Matching/ref/"
 nonmatching_test_loc="./Assets/Seg_Module/Output/Non_Matching/test/"
-nonmatching_ref_conflict = "./Assets/Seg_Module/Output/Non_Matching/ref/conflict/"
-nonmatching_test_conflict = "./Assets/Seg_Module/Output/Non_Matching/test/conflict/"
+nonmatching_ref_conflict = "./Assets/Seg_Module/Output/Conflict/ref"
+nonmatching_test_conflict = "./Assets/Seg_Module/Output/Conflict/test"
 
 #might need to be adjusted as per segment rois
 ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
@@ -55,7 +55,7 @@ ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/"
 def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc):
         print("Conflict Segment Matching Started...........................................................")
         print(nm_test_loc)
-        if no_of_nonmatching_ref_segs - 1 != 0:
+        if no_of_nonmatching_ref_segs != 0 and len(nmt_conflict_file_list) == 0:
                 print("Missing segment in test artwork")
                 for segf in nmr_file_list:
                         if segf.endswith('.jpg') or segf.endswith('.jpeg'):
@@ -64,8 +64,8 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc):
                                 cv2.imshow("Missing segment " + segf, def_seg)
                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
-        elif no_of_nonmatching_test_segs - 1 != 0:
-                print("Damaged Printwork")
+        elif no_of_nonmatching_test_segs != 0:
+                print("Damaged Printwork - Broken or Dye patch")
                 for segf in nmt_file_list:
                         if segf.endswith('.jpg') or segf.endswith('.jpeg'):
                                 print(segf)
@@ -114,6 +114,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc):
                                         if mask[k] == [1]:
                                                 ransac_count += 1
                                                 ransac_pos.append(k)
+
 
                                 rc_kp.append(ransac_count)
                                 matching_kp_list.append(ransac_pos)
