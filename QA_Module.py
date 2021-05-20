@@ -533,6 +533,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 if len(defected_contours)!=0:
                                                                         diff_image = ref_th_seg - gr_test_seg_thresh
                                                                         cv2.imshow("Diff imageX", diff_image)
+                                                                        #To draw the test seg's minima maxima defect---------------
+                                                                        disp_img = test_seg
+                                                                        # cv2.draw
                                                                         cv2.waitKey(0)
                                                                         no_def_segs += 1
                                                                         minmax_def.append([i, test_seg])
@@ -585,20 +588,43 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
         diff_image = cv2.cvtColor(diff_image, cv2.COLOR_BGR2GRAY)
         cv2.imshow("Diff Image ", diff_image)
         cv2.waitKey(0)
-        gauss_diff = cv2.GaussianBlur(diff_image,(5,13), cv2.BORDER_DEFAULT)
-        # cv2.imshow("Gauss Diff Image ", gauss_diff)
-        # cv2.waitKey(0)
+        gauss_diff = cv2.GaussianBlur(diff_image,(3,3), cv2.BORDER_DEFAULT)
+        cv2.imshow("Gauss Diff Image ", gauss_diff)
+        cv2.waitKey(0)
 
         _, thresh_gdiff= cv2.threshold(gauss_diff, 254, 255, cv2.THRESH_BINARY)
         cv2.imshow("Gauss Diff Image Thresh", thresh_gdiff)
         cv2.waitKey(0)
 
         cont_arr, hierarchy = cv2.findContours(thresh_gdiff, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+#Extra Operator-----------------------------------------------------------------------------------------------------------------
+        ult_ctrs = []
+        for a in range(len(cont_arr)):
+                if(len(cont_arr) != 1):
+                        for c in range(len(cont_arr[a]) - 1):
+                                for j in range(-2,3):
+                                        for k in range(-2,3):
+                                                pt = cont_arr[a][c].flatten()
+                                                if thresh_gdiff[pt[0]+j][pt[1]+k] == 255:
+                                                        if [[pt[0]+j,pt[1]+k]] in cont_arr[a+1]:
+                                                                ult_ctrs.append([cont_arr[a] ,cont_arr[a+1]])
+                else:
+                        ult_ctrs.append([cont_arr[a]])
+
+        def_ult_contours = []
+        for u in ult_ctrs:
+                if len(u) != 1:
+                        ctr_area = cv2.contourArea(u[0]) + cv2.contourArea(u[1])
+                else:
+                        ctr_area = cv2.contourArea(u[0])
+                if ctr_area/segmentArea >= 0.008:
+                        def_ult_contours.append(u)
+#Extra Operator End--------------------------------------------------------------------------------------------------------------
 
         def_contours = []
         for cnt in cont_arr:
                 cnt_area = cv2.contourArea(cnt)
-                if cnt_area/segmentArea >=0.006:
+                if cnt_area/segmentArea >= 0.007:
                         def_contours.append(cnt)
 
         return def_contours, ref_thresh_segs[n]
@@ -623,8 +649,12 @@ def resize_segments(thr_seg, ref_dimensions):
         crop_seg = thr_seg[ y_min:y_max , x_min:x_max ]
         cv2.imshow("Cropped ", crop_seg)
         cv2.waitKey(0)
+        cr_dim = crop_seg.shape
+        # cr_w = int(cr_dim[1] * 250/100)
+        # cr_h = int(cr_dim[0] * 250/100)
         # cv2.destroyAllWindows()
         bg = np.zeros((ref_dimensions[0], ref_dimensions[1]), np.uint8) * 255
+        # bg = np.zeros((cr_h, cr_w), np.uint8) * 255
         x_offset = y_offset = 20
 
         bg[y_offset: y_offset + crop_seg.shape[0], x_offset: x_offset + crop_seg.shape[1]] = crop_seg
