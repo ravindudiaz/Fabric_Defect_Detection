@@ -10,26 +10,314 @@ matching_ref_loc ="./Assets/Seg_Module/Output/Matching/ref/"
 matching_test_loc = "./Assets/Seg_Module/Output/Matching/test/"
 nonmatching_ref_loc = "./Assets/Seg_Module/Output/Non_Matching/ref/"
 nonmatching_test_loc="./Assets/Seg_Module/Output/Non_Matching/test/"
+nonmatching_ref_conflict = "./Assets/Seg_Module/Output/Conflict/ref"
+nonmatching_test_conflict = "./Assets/Seg_Module/Output/Conflict/test"
 
 #might need to be adjusted as per segment rois
 ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
 test_seg_roi_loc = "./Assets/QA_Module/Output/rois"
 
-# matching_ref_loc
+# matching_ref
 mr_file_list = os.listdir(matching_ref_loc)
 no_of_matching_ref_segs = len(mr_file_list)
 
-#matching_test_loc
+
+#matching_test
 mt_file_list = os.listdir(matching_test_loc)
 no_of_matching_test_segs = len(mt_file_list)
 
-#nonmatching_ref_loc
+#nonmatching_ref
 nmr_file_list = os.listdir(nonmatching_ref_loc)
 no_of_nonmatching_ref_segs = len(nmr_file_list)
 
-#non_matching_test_loc
+#non_matching_ref_conflict
+nmr_conflict_file_list = os.listdir(nonmatching_ref_conflict)
+
+#non_matching_test
 nmt_file_list = os.listdir(nonmatching_test_loc)
-no_of_nonmatching_test_segs = len(nmt_file_list)
+no_of_nonmatching_test_segs = len(nmt_file_list) - 1
+
+#non_matching_test_conflict
+nmt_conflict_file_list = os.listdir(nonmatching_test_conflict)
+
+#ref artwork & cloth loc
+ref_artwork_mask_loc = "Assets/BR_Module/Output/mask/ref/artwork/"
+ref_or_cloth_loc = "Assets/BR_Module/Output/mask/ref/cloth/"  #outer removed
+
+#test artwork &cloth loc
+test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
+test_or_cloth_loc = "Assets/BR_Module/Output/mask/test/cloth/"  #outer removed
+
+#ref isolated artwork loc
+ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/"
+
+
+def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc):
+        print("Conflict Segment Matching Started...........................................................")
+        print(nm_test_loc)
+        if no_of_nonmatching_ref_segs != 0 and len(nmt_conflict_file_list) == 0:
+                print("Missing segment in test artwork")
+                for segf in nmr_file_list:
+                        if segf.endswith('.jpg') or segf.endswith('.jpeg'):
+                                print("Files", segf)
+                                def_seg = cv2.imread(nm_ref_loc + segf)
+                                cv2.imshow("Missing segment " + segf, def_seg)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+        elif no_of_nonmatching_test_segs != 0:
+                print("Damaged Printwork - Broken or Dye patch")
+                for segf in nmt_file_list:
+                        if segf.endswith('.jpg') or segf.endswith('.jpeg'):
+                                print(segf)
+                                def_seg = cv2.imread(nm_test_loc + segf)
+                                cv2.imshow(segf , def_seg)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+        elif len(nmr_conflict_file_list) != 0:
+                for i in range(len(nmr_conflict_file_list)):
+                        nmrc_seg = cv2.imread(nonmatching_ref_conflict + "nm_" + str(i))
+                        nmrc_seg_gr = cv2.cvtColor(nmrc_seg, cv2.COLOR_BGR2GRAY)
+
+                        #Reference keypoints
+                        rc_kp = []
+                        matching_kp_list = []
+                        sift = cv2.SIFT_create()
+                        kprc, desr = sift.detectAndCompute(nmrc_seg_gr, None)
+                        tc_segs = []
+                        for j in range(len(nmt_conflict_file_list)):
+                                nmtc_seg = cv2.imread(nonmatching_test_conflict + "nm_"+str(i)+str(j))
+                                tc_segs.append(nmtc_seg)
+                                nmtc_seg_gr = cv2.cvtColor(nmtc_seg, cv2.COLOR_BGR2GRAY)
+                                kptc, dest = sift.detectAndCompute(nmtc_seg_gr, None)
+                                flann = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
+                                matches = flann.match(dest, desr)
+                                matches = sorted(matches, key = lambda x: x.distance)
+                                # matches = list(filter(lambda x: x.distance <=100, matches))
+
+                                points1 = np.zeros((len(matches), 2), dtype=np.float32)
+                                points2 = np.zeros((len(matches), 2), dtype=np.float32)
+
+                                for l, match in enumerate(matches):
+                                        points1[l, :] = kptc[match.queryIdx].pt
+                                        points2[l, :] = kprc[match.queryIdx].pt
+
+                                h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
+
+                                matching_result = cv2.drawMatches(nmtc_seg_gr, kptc, nmrc_seg_gr, matches[:20], None)
+                                cv2.namedWindow("matched conflict kps", cv2.WINDOW_NORMAL)
+                                cv2.resizeWindow("matched conflict kps", 900, 1200)
+                                cv2.imshow("matched conflict kps", matching_result)
+
+                                ransac_count = 0
+                                ransac_pos = []
+                                for k in range(len(mask)):
+                                        if mask[k] == [1]:
+                                                ransac_count += 1
+                                                ransac_pos.append(k)
+
+
+                                rc_kp.append(ransac_count)
+                                matching_kp_list.append(ransac_pos)
+                        max = 0
+                        max_idx = 0
+                        for x in range(len(rc_kp)):
+                                if max < rc_kp[x]:
+                                        max = rc_kp[x]
+                                        max_idx = x
+                        best_match = x
+
+                        curr_matching_ref_list = os.listdir(matching_ref_loc)
+                        curr_files = len(curr_matching_ref_list)
+                        cv2.imwrite(matching_ref_loc+"m_"+str(curr_files), nmrc_seg)
+                        os.remove(nonmatching_ref_conflict+"nm_"+str(i))
+                        curr_matching_test_list = os.listdir(matching_test_loc)
+                        cv2.imwrite(matching_test_loc+"m_"+str(curr_files), tc_segs[best_match])
+                        os.remove(nonmatching_test_conflict + "nm_" + str(i) + str(x))
+        print("Conflict Segment Matching Done...............................................")
+
+
+def check_artwork_position(ref_artwork_loc, ref_cloth_loc, test_artwork_loc, test_cloth_loc):
+
+        test_artwork = cv2.imread(test_artwork_loc + "Mask_girlb2_tex_blueflower1.jpg")  #outer background removed test image
+        ref_artwork = cv2.imread(ref_artwork_loc + "Mask_girlb2_tex_blueflower.jpg") #isolated artwork
+
+        ref_artwork_gr = cv2.cvtColor(ref_artwork, cv2.COLOR_BGR2GRAY)
+        nz_artwork_locs = np.argwhere(ref_artwork)
+
+        x = []
+        y = []
+        for pt in nz_artwork_locs:
+                x.append(pt[1])
+                y.append(pt[0])
+        x = sorted(x)
+        y = sorted(y)
+
+        # ymin = y[0]
+        # ymax = y[len(y) - 1]
+        # xmin = x[0]
+        # xmax = x[len(x)-1]
+        # cropped_artwork = ref_artwork[ ymin:ymax , xmin:xmax ]
+        # cropped_artwork_gr = cv2.cvtColor(cropped_artwork, cv2.COLOR_BGR2GRAY)
+        cropped_artwork_gr = cv2.cvtColor(ref_artwork, cv2.COLOR_BGR2GRAY)
+
+        #SIFT Operator
+        sift = cv2.SIFT_create()
+        kpr, desr = sift.detectAndCompute(cropped_artwork_gr, None) #For the cropped artwork
+        kpt, dest = sift.detectAndCompute(ref_artwork_gr, None)   #For the outer removed test cloth
+
+        #Using FLANN BASED matcher
+        flann = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
+        matches = flann.match(dest, desr)
+        print("FLANN matches : ",len(matches))
+
+        matches = sorted(matches, key=lambda x: x.distance)
+
+        if len(kpt) >= len(kpr):
+                matches = matches[:(len(kpr)-1)]
+        else:
+                matches = matches[:(len(kpt)-1)]
+
+        matches = list(filter(lambda x: x.distance <= 100, matches))
+
+        points1 = np.zeros((len(matches), 2), dtype=np.float32)
+        points2 = np.zeros((len(matches), 2), dtype=np.float32)
+
+        print(len(kpt), len(kpr))
+
+        for l, match in enumerate(matches):
+                points1[l, :] = kpt[match.queryIdx].pt
+                points2[l, :] = kpr[match.queryIdx].pt
+        h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
+
+        matching_result = cv2.drawMatches(ref_artwork_gr, kpt, cropped_artwork_gr, kpr, matches[:10], None)
+        # print(mask)
+        cv2.imshow("Matching Result ", matching_result)
+        cv2.waitKey(0)
+
+        #Find the relevent keypoints that should be taken from the test and ref artworks for comparison
+        ransac_count = 0
+        ransac_pos = []
+        for k in range(len(mask)):
+                if mask[k] == [1]:
+                        ransac_count += 1
+                        ransac_pos.append(k)
+        print(ransac_count)
+        print(ransac_pos)
+
+        ref_pois = []
+        test_pois = []
+
+        for pos in ransac_pos:
+                ref_pois.append([int(kpr[pos].pt[0]), int(kpr[pos].pt[1])])
+                test_pois.append([int(kpt[pos].pt[0]), int(kpt[pos].pt[1])])
+        print("Ref printwork pois  : ", ref_pois)
+        print("Test printwork pois : ", test_pois)
+
+        #Ref Cloth mask or the Outer removed cloth - ref ----------------------
+        ref_or_cloth = cv2.imread(ref_or_cloth_loc + "girlb2_tex_blueflower.jpg")
+        ref_or_cloth_gr = cv2.cvtColor(ref_or_cloth, cv2.COLOR_BGR2GRAY)
+
+        ref_or_cloth_nz = np.argwhere(ref_or_cloth_gr)
+        # print(ref_or_cloth_nz)
+        xr = []
+        yr = []
+        for pt in ref_or_cloth_nz:
+                xr.append(pt[1])
+                yr.append(pt[0])
+        xr = sorted(x)
+        yr = sorted(y)
+        xr_max = x[len(x)-1]
+        xr_min = x[0]
+        yr_max = y[len(y)-1]
+        yr_min = y[0]
+        xr_diff = xr_max - xr_min
+
+
+        #Ref image reference points
+
+        pr1 = [xr_min + int(xr_diff*(1/3)), yr_min]
+        pr2 = [xr_min + int(xr_diff*(2/3)), yr_min]
+        rtotal_distance_1 = 0
+        rtotal_distance_2 = 0
+        for pt in ref_pois:
+                rdist1 = (pt[0] - pr1[0])**2 + (pt[1]-pr1[0])**2
+                rdist2 = (pt[0] - pr2[0])**2 + (pt[1]-pr2[0])**2
+                rtotal_distance_1 += rdist1
+                rtotal_distance_2 += rdist2
+
+        rdist = (rtotal_distance_1/len(ref_pois)) + (rtotal_distance_2/len(ref_pois))
+        print("Reference printwork distance : ", rdist)
+
+
+        # Test Cloth mask or the Outer removed cloth - Test --------------------------
+        test_or_cloth = cv2.imread(test_or_cloth_loc + "girlb2_tex_blueflower2.jpg")
+        test_or_cloth_gr = cv2.cvtColor(test_or_cloth, cv2.COLOR_BGR2GRAY)
+
+        test_or_cloth_nz = np.argwhere(test_or_cloth_gr)
+        xt = []
+        yt = []
+        for pt in test_or_cloth_nz:
+                xt.append(pt[1])
+                yt.append(pt[0])
+        xt = sorted(xt)
+        yt = sorted(yt)
+        xt_max = xt[len(xt) - 1]
+        xt_min = xt[0]
+        yt_max = yt[len(yt) - 1]
+        yt_min = yt[0]
+
+        # Test image reference points
+
+        pt1 = [xt_min + int(xr_diff * (1 / 3)), yt_min]
+        pt2 = [xt_min + int(xr_diff * (2 / 3)), yt_min]
+        ttotal_distance_1 = 0
+        ttotal_distance_2 = 0
+        for pt in ref_pois:
+                dist1 = (pt[0] - pt1[0]) ** 2 + (pt[1] - pt1[0]) ** 2
+                dist2 = (pt[0] - pt2[0]) ** 2 + (pt[1] - pt2[0]) ** 2
+                ttotal_distance_1 += dist1
+                ttotal_distance_2 += dist2
+
+        tdist = (ttotal_distance_1 / len(test_pois)) + (ttotal_distance_2 / len(test_pois))
+
+        print("test printwork distance : ", tdist)
+
+        dist_diff = abs(tdist - rdist) / rdist
+
+        print("Distance difference : ", dist_diff)
+
+        if dist_diff >= 0.16:
+                print("Printwork position defect...")
+
+        #Cloth mask of the Outer removed cloth - test
+        # test_or_cloth = cv2.imread(test_or_cloth_loc+"")
+
+        # #Harris Corner Detector
+        # ref_or_cloth_gr[ref_or_cloth_gr != 0] = 255
+        # kernel = np.ones((5,5), np.uint8)
+        # ref_or_cloth_gr = cv2.erode(ref_or_cloth_gr, kernel, iterations=3)
+        # # cv2.imshow("eroded",test_or_cloth_gr)
+        # ref_or_cloth_gr = np.float32(ref_or_cloth_gr)
+        # dst = cv2.cornerHarris(ref_or_cloth_gr, 2, 3, 0.04)
+        # # print(dst)
+        #
+        # print(ref_or_cloth_gr.shape)
+        # ref_or_cloth_dr = ref_or_cloth
+        #
+        # arr = np.argwhere(dst)
+        # print(len(arr))
+        #
+        # # test_or_cloth_dr[test_or_cloth_dr != [0,0,0]] = 255
+        # ref_or_cloth_dr[dst > 0.040*dst.max()] = [0,0,255]
+        # print(dst)
+        # pois = np.where(dst <0.025*dst.max())
+        # # print(pois, len(pois))
+        # cv2.imshow('dst', ref_or_cloth_dr)
+        # cv2.waitKey(0)
+
+        # nz_locs_ref = np.argwhere(ref_or_cloth_gr)
+
+
 
 
 def detect_features(no_of_matching_ref_segs, ref_img_check):
@@ -37,6 +325,7 @@ def detect_features(no_of_matching_ref_segs, ref_img_check):
 
         ref_features=[]
         thresholded_segments = []
+        ref_segs = []
 
         for i in range(no_of_matching_ref_segs):
                 print("Reference Image Segment ", str(i))
@@ -45,7 +334,7 @@ def detect_features(no_of_matching_ref_segs, ref_img_check):
                         seg = cv2.imread(matching_ref_loc+"m"+"_"+str(i)+".jpg")
                 else:
                         seg = cv2.imread(matching_test_loc + "m" + "_" + str(i) + ".jpg")
-
+                ref_segs.append(seg)
                 gr_seg = cv2.cvtColor(seg, cv2.COLOR_BGR2GRAY)
 
                 #Detect Shape
@@ -63,6 +352,7 @@ def detect_features(no_of_matching_ref_segs, ref_img_check):
                 #Detect Placement
                 # segment center
                 dimensions = seg.shape
+                ref_nz = np.argwhere(seg)
                 xg = int(dimensions[1] / 2)
                 yg = int(dimensions[0] / 2)
                 garment_center = [xg, yg]
@@ -75,20 +365,21 @@ def detect_features(no_of_matching_ref_segs, ref_img_check):
                 #Detect Minima Maxima
                 # seg_zero_crossings, seg_point_measures = detect_minima_maxima(thresh_seg, seg)
 
-                # ref_seg_curvature_list = detMinMax(thresh_seg, seg)
+                # ref_seg_curvature_list, contours_ref = detMinMax(thresh_seg, seg)
 
                 # seg_features = [huMoments[6],huMoments[0],huMoments[1],huMoments[2],segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, seg_zero_crossings, seg_point_measures]
-                # seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, ref_seg_curvature_list]
+                # seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures, ref_seg_curvature_list, contours_ref]
                 seg_features = [huMoments[6], huMoments[0], huMoments[1], huMoments[2], segmentContourArea, ref_avg_comment_measure, segment_placement_measures, segment_color_measures]
                 # cv2.imshow("Init Contours", thresh_seg)
+
                 # cv2.waitKey(0)
 
                 ref_features.append(seg_features)
                 thresholded_segments.append(thresh_seg)
         # print(ref_features)
-        return ref_features, thresholded_segments, dimensions
+        return ref_features, thresholded_segments, dimensions, ref_segs
 
-def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions):
+def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions, ref_segs):
         print("Detect and Match test image stage reached...........................")
 
         no_def_segs = 0
@@ -139,9 +430,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                 #Detect and Compare Size
                                 segmentContourArea = detect_size(thresh_seg)
                                 size_deviation = abs(ref_features[i][4] - segmentContourArea)/ ref_features[i][4]
-                                print(size_deviation)
+                                print("Size Deviation",size_deviation)
                                 # Ta = 0.15       #Size Deviation Threshold- Experimental
-                                Ta = 100000
+                                Ta = 0.12
                                 if size_deviation >= Ta:
                                         size_defect = {
                                                 "type": "Size Defect",
@@ -155,8 +446,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                         rotation_measure = detect_rotation(moments)
                                         rotation_deviation = abs((ref_features[i][5] - rotation_measure)/ref_features[i][5])
                                         print("Rotation Deviation : ", rotation_deviation)
-                                        # Tr = 0.056
-                                        Tr = 100000
+                                        Tr = 0.6
+
+                                        # Tr = 100000
 
                                         if rotation_deviation >= Tr:
                                                 rotation_defect = {
@@ -189,7 +481,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                         placement_def.append([i, test_seg])
                                                 else:
                                                         #Detect and Compare Color
-                                                        ret1, gr_test_seg_thresh = cv2.threshold(gr_test_seg, 40, 255, cv2.THRESH_BINARY)
+                                                        ret1, gr_test_seg_thresh = cv2.threshold(gr_test_seg, 5, 255, cv2.THRESH_BINARY)
+                                                        cv2.imshow("thresholded seg", gr_test_seg_thresh)
+                                                        cv2.waitKey(0)
                                                         test_seg_color_measures = detect_color(test_seg, gr_test_seg_thresh)
                                                         # print(test_seg_color_measures)
                                                         all_roi_deviations = []
@@ -231,18 +525,41 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 print(color_defect)
                                                         else:
                                                                 #Detect and Compare Minima and Maxima
-                                                                # test_zero_crossings, test_point_measures = detect_minima_maxima(gr_test_seg_thresh, test_seg)
-                                                                # test_seg_curvature_list = detMinMax(gr_test_seg_thresh, test_seg)
-                                                                defected_contours = detMinMax2(reference_thresh_segs, gr_test_seg_thresh, ref_dimensions, segmentContourArea, i)
+                                                                defected_contours, ref_th_seg = detMinMax2(reference_thresh_segs, gr_test_seg_thresh, ref_dimensions, segmentContourArea, i)
+
+
 
                                                                 minmax_img = test_seg
                                                                 if len(defected_contours)!=0:
-                                                                        cv2.drawContours(minmax_img, defected_contours, -1, (0,128,255), cv2.FILLED)
+                                                                        diff_image = ref_th_seg - gr_test_seg_thresh
+                                                                        cv2.imshow("Diff imageX", diff_image)
+                                                                        #To draw the test seg's minima maxima defect---------------
+                                                                        disp_img = test_seg
+                                                                        # cv2.draw
+                                                                        cv2.waitKey(0)
                                                                         no_def_segs += 1
                                                                         minmax_def.append([i, test_seg])
-        print("Number of defected segemnts : ",no_def_segs)
-        return shape_def, size_def, placement_def, rotation_def, color_def
 
+                                                                # ref_curvatures = ref_features[i][8]
+                                                                # print("Ref curvature values ",i,":", ref_curvatures)
+                                                                # print("Test curvature values ",i,":", test_seg_curvs)
+                                                                # cvals = []
+                                                                #
+                                                                # for k in range(len(test_seg_curvs)):
+                                                                #         tlen = len(test_seg_curvs[k])
+                                                                #         rlen = len(ref_curvatures[k])
+                                                                #
+                                                                #         if tlen >= rlen:
+                                                                #                 ct_cvals = []
+                                                                #                 for m in range(len(test_seg_curvs[k])):
+                                                                #                         val = test_seg_curvs[k][m]
+                                                                #                         for l in range(rlen):
+                                                                #                                 if val == ref_curvatures[k][l]:
+                                                                #                                         ct_cvals.append([m, l])
+                                                                #                 cvals.append(ct_cvals)
+
+        print("Number of defected segemnts : ",no_def_segs)
+        return shape_def, size_def, placement_def, rotation_def, color_def, minmax_def
 
 #MinMax2
 def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
@@ -252,8 +569,8 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
         # ref_dimensions = ref_thresh_segs[n].shape
         print(ref_dimensions)
         ref = resize_segments(ref_thresh_segs[n], ref_dimensions)
-        # cv2.imshow("ref",ref)
-        # cv2.waitKey(0)
+        cv2.imshow("ref",ref)
+        cv2.waitKey(0)
 
         #For the test seg
 
@@ -269,25 +586,48 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
 
         diff_image = cv2.merge((diff_image, diff_image, diff_image))
         diff_image = cv2.cvtColor(diff_image, cv2.COLOR_BGR2GRAY)
-        # cv2.imshow("Diff Image ", diff_image)
-        # cv2.waitKey(0)
-        gauss_diff = cv2.GaussianBlur(diff_image,(7,15), cv2.BORDER_DEFAULT)
-        # cv2.imshow("Gauss Diff Image ", gauss_diff)
-        # cv2.waitKey(0)
+        cv2.imshow("Diff Image ", diff_image)
+        cv2.waitKey(0)
+        gauss_diff = cv2.GaussianBlur(diff_image,(3,3), cv2.BORDER_DEFAULT)
+        cv2.imshow("Gauss Diff Image ", gauss_diff)
+        cv2.waitKey(0)
 
         _, thresh_gdiff= cv2.threshold(gauss_diff, 254, 255, cv2.THRESH_BINARY)
-        # cv2.imshow("Gauss Diff Image Thresh", thresh_gdiff)
-        # cv2.waitKey(0)
+        cv2.imshow("Gauss Diff Image Thresh", thresh_gdiff)
+        cv2.waitKey(0)
 
-        cont_arr, hierarchy = cv2.findContours(thresh_gdiff, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        cont_arr, hierarchy = cv2.findContours(thresh_gdiff, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+#Extra Operator-----------------------------------------------------------------------------------------------------------------
+        ult_ctrs = []
+        for a in range(len(cont_arr)):
+                if(len(cont_arr) != 1):
+                        for c in range(len(cont_arr[a]) - 1):
+                                for j in range(-2,3):
+                                        for k in range(-2,3):
+                                                pt = cont_arr[a][c].flatten()
+                                                if thresh_gdiff[pt[0]+j][pt[1]+k] == 255:
+                                                        if [[pt[0]+j,pt[1]+k]] in cont_arr[a+1]:
+                                                                ult_ctrs.append([cont_arr[a] ,cont_arr[a+1]])
+                else:
+                        ult_ctrs.append([cont_arr[a]])
+
+        def_ult_contours = []
+        for u in ult_ctrs:
+                if len(u) != 1:
+                        ctr_area = cv2.contourArea(u[0]) + cv2.contourArea(u[1])
+                else:
+                        ctr_area = cv2.contourArea(u[0])
+                if ctr_area/segmentArea >= 0.008:
+                        def_ult_contours.append(u)
+#Extra Operator End--------------------------------------------------------------------------------------------------------------
 
         def_contours = []
         for cnt in cont_arr:
                 cnt_area = cv2.contourArea(cnt)
-                if cnt_area/segmentArea >=0.008:
+                if cnt_area/segmentArea >= 0.007:
                         def_contours.append(cnt)
 
-        return def_contours
+        return def_contours, ref_thresh_segs[n]
 
 
 def resize_segments(thr_seg, ref_dimensions):
@@ -296,8 +636,8 @@ def resize_segments(thr_seg, ref_dimensions):
         x_arr = []
         y_arr = []
         for loc in nz_locs:
-                x_arr.append(loc[0])
-                y_arr.append(loc[1])
+                y_arr.append(loc[0])
+                x_arr.append(loc[1])
         x_arr = sorted(x_arr)
         y_arr = sorted(y_arr)
 
@@ -307,10 +647,14 @@ def resize_segments(thr_seg, ref_dimensions):
         y_max = y_arr[len(y_arr)-1]
 
         crop_seg = thr_seg[ y_min:y_max , x_min:x_max ]
-        # cv2.imshow("Cropped ", crop_seg)
-        # cv2.waitKey(0)
-
+        cv2.imshow("Cropped ", crop_seg)
+        cv2.waitKey(0)
+        cr_dim = crop_seg.shape
+        # cr_w = int(cr_dim[1] * 250/100)
+        # cr_h = int(cr_dim[0] * 250/100)
+        # cv2.destroyAllWindows()
         bg = np.zeros((ref_dimensions[0], ref_dimensions[1]), np.uint8) * 255
+        # bg = np.zeros((cr_h, cr_w), np.uint8) * 255
         x_offset = y_offset = 20
 
         bg[y_offset: y_offset + crop_seg.shape[0], x_offset: x_offset + crop_seg.shape[1]] = crop_seg
@@ -318,6 +662,8 @@ def resize_segments(thr_seg, ref_dimensions):
         # cv2.waitKey(0)
 
         return bg
+
+
 
 
 
@@ -482,331 +828,7 @@ def detect_color(segment, thresholded_segment):
         # cv2.destroyAllWindows()
 
 
-#Minima Maxima Detection 2
-def detMinMax(thresholded_segment, segment):
-        print("Minima Maxima Detection")
-        contours_all, hierarchy = cv2.findContours(thresholded_segment, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        # print(contours_all)
-        cntAreas = []
-        contours = []
-        # print(contours_all)
-        print("Total contours discovered :", len(contours_all))
-        for cnt in contours_all:
-                cntAreas.append(cv2.contourArea(cnt))
-        cntAreas = sorted(cntAreas)
-        cntAreaThreshold = max(cntAreas) * 0.0008
-        # print(cntAreas)
-        for cnt in contours_all:
-                # print(len(cnt))
-                if (cv2.contourArea(cnt) >= cntAreaThreshold) and len(cnt) >= 20:
-                        contours.append(cnt)
-                        # print(cnt)
-        print("Selected Contours : ", len(contours))
-        dimensions = segment.shape
-        img_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
-        cv2.drawContours(img_cont, contours, -1, 255, 1)
 
-        cv2.imshow("Init Contours", img_cont)
-        cv2.waitKey(0)
-
-        #Parameters to be passed to x zero crossings
-        diffSeqx = []
-        diffY = []
-        xAxis = []
-
-        approxCont = []
-
-        img_approx_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
-        img_smoothed_cont = np.zeros((dimensions[0], dimensions[1], 1), np.uint8) * 255
-
-        # Gaussian Kernel
-        gKernel = cv2.getGaussianKernel(3, 2)
-        G = cv2.transpose(gKernel)
-
-        smoothed_set = []
-
-        for k in range(len(contours)):
-                clen = len(contours[k])
-                print("Length of selected contour : ", clen)
-                arc_len = cv2.arcLength(contours[k], True)
-                if clen <= 50 :
-                        epsilon = 0.0007*arc_len
-                elif clen <= 100:
-                        epsilon = 0.0015 * arc_len
-                elif clen <= 300:
-                        epsilon = 0.007*arc_len
-                elif clen <= 500:
-                        epsilon = 0.0095*arc_len
-                elif clen <= 700:
-                        epsilon = 0.012*arc_len
-                elif clen <= 1000:
-                        epsilon = 0.03*arc_len
-                # epsilon = 0.001 * arc_len
-                print("Arc length is ", cv2.arcLength(contours[k], True))
-                appcnt = cv2.approxPolyDP(contours[k], epsilon, True)
-                approxCont.append(appcnt)
-                # contours[k] = appcnt
-
-                #Draw approximated contour
-                cv2.drawContours(img_approx_cont, [appcnt], 0, 255, 1)
-
-                contour_x = []
-                contour_y = []
-
-                for j in range(len(appcnt)):
-                        contour_x.append(appcnt[j].flatten()[0])
-                        contour_y.append(appcnt[j].flatten()[1])
-
-                smoothed_x = np.convolve(contour_x, G.flatten(), "same")
-                smoothed_y = np.convolve(contour_y, G.flatten(), "same")
-
-                convol_len = len(G.flatten())
-                x_len = len(smoothed_x)
-
-                # for a in range(int(convol_len / 2)):
-                        # smoothed_x[a] = appcnt[a].flatten()[0]
-                        # smoothed_y[a] = appcnt[a].flatten()[1]
-                        # smoothed_x[x_len - a - 1] = appcnt[x_len - a - 1].flatten()[0]
-                        # smoothed_y[x_len - a - 1] = appcnt[x_len - a - 1].flatten()[1]
-
-                for u in range(len(smoothed_x)):
-                        smoothed_x[u] = int(smoothed_x[u])
-                        smoothed_y[u] = int(smoothed_y[u])
-
-                smoothed_cont = []
-
-                for m in range(len(smoothed_x)):
-                        smoothed_cont.append([[smoothed_x[m], smoothed_y[m]]])
-                smoothed_cont = np.array(smoothed_cont)
-
-                contours[k] = smoothed_cont
-                contours[k] = appcnt
-                smoothed_set.append(smoothed_cont)
-
-        # smoothed_set = cv2.UMat(np.array(smoothed_set, np.int32))
-
-
-        # Draw smoothed contours
-        # cv2.drawContours(img_smoothed_cont, smoothed_set, -1, 255, 1)
-
-
-
-
-        #Displaying approximated segment contours
-        cv2.imshow("Approximated Contours ", img_approx_cont)
-        cv2.waitKey(0)
-
-        #Displaying smoothed segment contours
-        cv2.imshow("Smoothed Contours ", img_smoothed_cont)
-        cv2.waitKey(0)
-
-        diffSeqx, diffY, xAxis = detect_x_zerocrossings(contours, diffSeqx, diffY, xAxis)
-
-
-        #Parameters to be passed to y zero crossings
-        diffSeqy = []
-        diffX = []
-        yAxis = []
-
-        diffSeqy, diffX, yAxis = detect_y_zerocrossings(contours, diffSeqy, diffX, yAxis)
-
-        zc_position_list, zc_location_list = getLocationList(xAxis, yAxis, contours, segment)
-        curvature_list = get_curvature(contours, zc_location_list, zc_position_list)
-        return curvature_list
-
-def detect_x_zerocrossings(contours, diffSeq, diffY, xAxis):
-        # Get Zero Crossings over X axis
-        for n in range(len(contours)):
-                print("Contour ", n, " length :", len(contours[n]))
-                pst = 0
-                ngt = 0
-                diffY_ct = []
-                diffSeq_ct = []
-                for i in range(len(contours[n]) - 1):
-                        # print("contours[",str(n),"]","[",str(i),"]=",contours[n][i].flatten())
-                        # print("ngt ",ngt," pst ", pst)
-                        d = contours[n][i + 1].flatten()[1] - contours[n][i].flatten()[1]
-                        diffY_ct.append(d)
-                        if (d >= 0):
-                                pst += 1
-                                if ngt != 0:
-                                        diffSeq_ct.append(ngt)
-                                        ngt = 0
-                        else:
-                                ngt += 1
-                                if pst != 0:
-                                        diffSeq_ct.append(pst)
-                                        pst = 0
-
-                if ngt != 0:
-                        diffSeq_ct.append(ngt)
-                        ngt = 0
-                        print(ngt)
-                elif pst != 0:
-                        diffSeq_ct.append(pst)
-                        pst = 0
-                        print(pst)
-                diffSeq.append(diffSeq_ct)
-                print("Diffseq for contour ",n ," length : ", len(diffSeq_ct))
-                # print("diffSeq ct :", diffSeq_ct)
-                diffY.append(diffY_ct)
-                # print("diffY_ct :", diffY_ct)
-        print("diffSeq", diffSeq, "******************************************")
-        print("diffY", diffY, "******************************************")
-
-        for n in range(len(contours)):
-                # if n == 0:
-                cntr = 0
-                shift = []
-                for i in range(len(diffSeq[n]) - 1):
-                        if diffSeq[n][i] >= 1 and diffSeq[n][i + 1] >= 1:
-                                shift.append(cntr + diffSeq[n][i])
-                        cntr += diffSeq[n][i]
-                xAxis.append(shift)
-        # xAxis.append(xAxisct)
-
-        print("xAxis : ", xAxis)
-        for m in range(len(xAxis)):
-                print("Contour ", m," xz points: ", len(xAxis[m]))
-
-        return diffSeq, diffY, xAxis
-
-def detect_y_zerocrossings(contours, diffSeq, diffX, yAxis):
-        # Get Zero Crossings over X axis
-        for n in range(len(contours)):
-                pst = 0
-                ngt = 0
-                diffX_ct = []
-                diffSeq_ct = []
-                for i in range(len(contours[n]) - 1):
-                        d = contours[n][i + 1].flatten()[0] - contours[n][i].flatten()[0]
-                        diffX_ct.append(d)
-                        if (d >= 0):
-                                pst += 1
-                                if ngt != 0:
-                                        diffSeq_ct.append(ngt)
-                                        ngt = 0
-                        else:
-                                ngt += 1
-                                if pst != 0:
-                                        diffSeq_ct.append(pst)
-                                        pst = 0
-
-                if ngt != 0:
-                        diffSeq_ct.append(ngt)
-                        ngt = 0
-                elif pst != 0:
-                        diffSeq_ct.append(pst)
-                        pst = 0
-                diffSeq.append(diffSeq_ct)
-                diffX.append(diffX_ct)
-        print("diffSeq", diffSeq, "******************************************")
-        print("diffX", diffX, "******************************************")
-
-        for n in range(len(contours)):
-                # if n == 0:
-                        cntr = 0
-                        temp = []
-                        for i in range(len(diffSeq[n]) - 1):
-                                if diffSeq[n][i] >= 1 and diffSeq[n][i + 1] >= 1:
-                                        temp.append(cntr + diffSeq[n][i])
-                                cntr += diffSeq[n][i]
-                        yAxis.append(temp)
-        print("yAxis ", yAxis)
-
-        # print("No of y points : ", len(yAxis))
-        for m in range(len(yAxis)):
-                print("Contour ", m," yz points: ", len(yAxis[m]))
-        return diffSeq, diffX, yAxis
-
-def getLocationList(xAxis, yAxis, contours, segment):
-        position_List = []
-        locationList = []
-
-        for n in range(len(contours)):
-                # posList_ct = xAxis[n] + yAxis[n]
-                posList_ct = []
-                arrlenX = len(xAxis[n])
-                arrlenY = len(yAxis[n])
-
-                # xAxis = np.array(xAxis)
-                # yAxis = np.array(yAxis)
-
-                if arrlenX >= arrlenY:
-                        for p in range(len(yAxis[n])):
-                                if xAxis[n][p] not in yAxis[n]:
-                                        posList_ct.append(xAxis[n][p])
-                                        posList_ct.append(yAxis[n][p])
-                                else:
-                                        posList_ct.append(xAxis[n][p])
-                        remaining = arrlenX - arrlenY
-                        if remaining != 0:
-                                for p in range(arrlenY,arrlenX):
-                                        posList_ct.append(xAxis[n][p])
-                else:
-                        for p in range(len(xAxis[n])):
-                                if yAxis[n][p] not in xAxis[n]:
-                                        posList_ct.append(xAxis[n][p])
-                                        posList_ct.append(yAxis[n][p])
-                                else:
-                                        posList_ct.append(xAxis[n][p])
-                        remaining = arrlenY - arrlenX
-                        if remaining != 0:
-                                for p in range(arrlenX,arrlenY):
-                                        posList_ct.append(yAxis[n][p])
-
-                posList_ct = sorted(posList_ct)
-                position_List.append(posList_ct)
-                locList_ct = []
-                print("posList_ct length ", len(posList_ct))
-                print("Contour ", n, " length ", len(contours[n]))
-                for pos in range(len(posList_ct)):
-                        # print("Position :",pos)
-                        loc = [contours[n][pos].flatten()[0], contours[n][pos].flatten()[1]]
-                        locList_ct.append(loc)
-                        cv2.line(segment, (int(loc[0]),int(loc[1])), (int(loc[0]),int(loc[1])), (128,255,0), 6)
-                locationList.append(locList_ct)
-
-        cv2.imshow("Detected Points ", segment)
-        cv2.waitKey(0)
-
-        return position_List, locationList
-
-
-def get_curvature(contourList, locationList, posList):
-        curvature_list = []
-        for n in range(len(locationList)):
-                # loc, locPrev, locOlder = 0
-                curvature_ct = []
-                for i in range(len(locationList[n])):
-                        pos = posList[n][i]
-                        if i == 0:
-                                loc = contourList[n][pos].flatten()
-                                locPrev = contourList[n][pos].flatten()
-                                locOlder = contourList[n][pos].flatten()
-                        elif i == 1:
-                                loc = contourList[n][pos].flatten()
-                                locPrev = contourList[n][pos - 1].flatten()
-                                locOlder = contourList[n][pos - 1].flatten()
-                        else:
-                                loc = contourList[n][i].flatten()
-                                locPrev = contourList[n][pos-1].flatten()
-                                locOlder = contourList[n][pos-2].flatten()
-                        #First Partial Derivatives
-                        gx = loc[0] - locPrev[0]
-                        ggx = -loc[0] + 2*locPrev[0] - locOlder[0]
-
-                        #Second Partial Derivatives
-                        gy = loc[1] - locPrev[1]
-                        ggy = -loc[1] + 2*locPrev[1] - locOlder[1]
-
-                        if (ggx + ggy)**3 ==0:
-                                curvature = abs((gx - gy)**2)
-                        else:
-                                curvature = abs((gx - gy)/(ggx + ggy)**3)
-                        curvature_ct.append(curvature)
-                curvature_list.append(curvature_ct)
-        return curvature_list
 
 def display_arr(arr, type):
         def_count = []
@@ -816,17 +838,15 @@ def display_arr(arr, type):
 
 
 #Function Usage
-# match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc)
-ref_features, ref_thresholded_segs, ref_dimensions = detect_features(no_of_matching_ref_segs, 1)
-shape_def, size_def, placement_def, rotation_def, color_def = detect_and_compare_matching_segments(no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions)
+
+# check_artwork_position(ref_artwork_loc, ref_or_cloth_loc, test_artwork_mask_loc, test_or_cloth_loc)
+match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc)
+ref_features, ref_thresholded_segs, ref_dimensions, ref_segs = detect_features(no_of_matching_ref_segs, 1)
+shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = detect_and_compare_matching_segments(no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs)
 
 display_arr(shape_def, "Shape")
 display_arr(size_def, "Size")
 display_arr(placement_def,"Placement")
 display_arr(rotation_def,"Rotation")
 display_arr(color_def,"Color")
-
-
-
-
-
+display_arr(minmax_def,"Minima Maxima")
