@@ -9,7 +9,7 @@ from os import path
 class BRModule():
 
     rect = (0,0,1,1)
-    resizeMark = 2100
+    resizeMark = 1800
     resizerVal = .3
     
     def removeOuterBackground(self,folder,saveFolder):
@@ -162,50 +162,62 @@ class BRModule():
 
 
 
-    def generateUniformArtWorkMask(self,folder,saveFolder):
+    def generateUniformArtWorkMask(self,filename,type):
 
-        for filename in os.listdir(folder):
+        editedFileName = ""
+        if type == "ref":
+            editedFileName = 'Assets/BR_Module/Output/edge_ref/'+ filename
 
-            editedFileName = folder +'/'+ filename
-            img = cv.imread(cv.samples.findFile(editedFileName))
+        if type == "test":
+            editedFileName = 'Assets/BR_Module/Output/edge_test/'+ filename
 
-            self.getOptimalThresholdVal(img)
+
+        img = cv.imread(cv.samples.findFile(editedFileName))
+
+        self.getOptimalThresholdVal(img)
         
-            img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-            _,mask = cv.threshold(img,self.minThresholdVal,self.maxThresholdVal,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
+        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        _,mask = cv.threshold(img,self.minThresholdVal,self.maxThresholdVal,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
 
-            # mask = cv.fastNlMeansDenoising(mask,None,10,10,7,21)
+        # mask = cv.fastNlMeansDenoising(mask,None,10,10,7,21)
 
-            kernal = np.ones((5,5), np.uint8)
-            mg = cv.morphologyEx(mask, cv.MORPH_GRADIENT, kernal)
-            mg = cv.medianBlur(mg,5)
+        kernal = np.ones((5,5), np.uint8)
+        mg = cv.morphologyEx(mask, cv.MORPH_GRADIENT, kernal)
+        mg = cv.medianBlur(mg,5)
 
-            gaussian = cv.GaussianBlur(mg,(3,3),cv.BORDER_DEFAULT)
-            edges = cv.Canny(gaussian,self.minThresholdVal,self.maxThresholdVal)
+        gaussian = cv.GaussianBlur(mg,(3,3),cv.BORDER_DEFAULT)
+        edges = cv.Canny(gaussian,self.minThresholdVal,self.maxThresholdVal)
 
-            contours, hierarchy = cv.findContours(edges,cv.RETR_TREE,cv.CHAIN_APPROX_NONE)
+        contours, hierarchy = cv.findContours(edges,cv.RETR_TREE,cv.CHAIN_APPROX_NONE)
         
-            #first sort the array by area
-            sorteddata = sorted(contours, key = cv.contourArea, reverse=True)
+        #first sort the array by area
+        sorteddata = sorted(contours, key = cv.contourArea, reverse=True)
 
-            image_binary = np.zeros(img.shape[:2],np.uint8)
+        image_binary = np.zeros(img.shape[:2],np.uint8)
 
-            for n in range(0,len(sorteddata)):
+        for n in range(0,len(sorteddata)):
 
-                if n > 4:
-                    # x, y, w, h = cv.boundingRect(sorteddata[n])
-                    cv.drawContours(image_binary, [sorteddata[n]],
-                         -1, (255, 255, 255), -1)
-                    # cv.rectangle(image_binary, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            if n > 4:
+                # x, y, w, h = cv.boundingRect(sorteddata[n])
+                cv.drawContours(image_binary, [sorteddata[n]],
+                        -1, (255, 255, 255), -1)
+                # cv.rectangle(image_binary, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
-            # mask = np.zeros(img.shape[:2],np.uint8)
-            # newmask = image_binary
 
-            # mask[newmask == 0] = 0
-            # mask[newmask == 255] = 1
+        self.mask = np.zeros(img.shape[:2],np.uint8)
+        newmask = image_binary
 
-            nameWithMask = saveFolder+"/"+filename        
-            cv.imwrite(nameWithMask, image_binary)
+        self.mask[newmask == 0] = 0
+        self.mask[newmask == 255] = 1
+
+        maskName = ""
+        if type == "ref":
+            maskName = "Assets/BR_Module/Output/artwork_masks_ref/"+filename
+
+        if type == "test":
+            maskName = "Assets/BR_Module/Output/artwork_masks_test/"+filename
+
+        cv.imwrite(maskName, image_binary)
 
 
 
@@ -229,7 +241,7 @@ class BRModule():
 
 
     
-    def isolateUniformFabArtwork(self,folder,maskFolder,saveFolder):
+    def isolateUniformFabArtwork(self,folder,type,saveFolder):
 
         for filename in os.listdir(folder):
 
@@ -241,8 +253,6 @@ class BRModule():
                 height = img.shape[0]
                 width = img.shape[1]
 
-                # if height > self.resizeMark or width > self.resizeMark :
-                #     img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal)
 
                 # create copy of image
                 img = img.copy()
@@ -256,7 +266,13 @@ class BRModule():
                 self.getOptimalThresholdVal(self.img_copy)
 
                 # generating mask for grabcut
-                self.getUniformArtworkMask(self.img_copy,filename,maskFolder)
+                # self.getUniformArtworkMask(self.img_copy,filename,maskFolder)
+
+                if 'uni_' in filename:
+                    self.generateUniformArtWorkMask(filename,type)
+
+                if '_tex_' in filename:
+                    self.generateteTexturedArtworkMask(filename,type)
 
                 try:
                     bgdmodel = np.zeros((1, 65), np.float64)
@@ -276,19 +292,19 @@ class BRModule():
 
 
 
-    def getUniformArtworkMask(self,img,filename,folder):
+    # def getUniformArtworkMask(self,img,filename,folder):
 
-        maskName = "Mask_"+filename
+    #     maskName = "Mask_"+filename
 
-        editedMaskFileName = folder +'/'+ maskName
-        maskImg = cv.imread(cv.samples.findFile(editedMaskFileName))
-        maskImg = cv.cvtColor(maskImg, cv.COLOR_BGR2GRAY)
+    #     editedMaskFileName = folder +'/'+ maskName
+    #     maskImg = cv.imread(cv.samples.findFile(editedMaskFileName))
+    #     maskImg = cv.cvtColor(maskImg, cv.COLOR_BGR2GRAY)
 
-        self.mask = np.zeros(img.shape[:2],np.uint8)
-        newmask = maskImg
+    #     self.mask = np.zeros(img.shape[:2],np.uint8)
+    #     newmask = maskImg
 
-        self.mask[newmask == 0] = 0
-        self.mask[newmask == 255] = 1
+    #     self.mask[newmask == 0] = 0
+    #     self.mask[newmask == 255] = 1
             
 
 
@@ -365,7 +381,7 @@ class BRModule():
                                 outputImageArr[row:row+blockSizeRows,column:column+blockSizeColumns] = (0, 0, 0)
 
                     outputImage = Image.fromarray(outputImageArr)
-                    outputImage.save(saveFolder+"/Mask_"+filename)
+                    outputImage.save(saveFolder+"/"+filename)
 
 
 
@@ -388,22 +404,41 @@ class BRModule():
 
 
 
-    def generateteTexturedArtworkMask(self,folder,saveFolder):
+    def generateteTexturedArtworkMask(self,filename,type):
 
-        for filename in os.listdir(folder):
+        editedFileName = ''
 
-            editedFileName = folder +'/'+ filename
-            
-            img = np.array(Image.open(editedFileName).convert('L'))
+        if type == "ref":
+            editedFileName = 'Assets/BR_Module/Output/artworks_drafts_ref/'+ filename
 
-            img = cv.normalize(img, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
-            res, img = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
+        if type == "test":
+            editedFileName = 'Assets/BR_Module/Output/artworks_drafts_test/'+ filename
 
-            cv.floodFill(img, None, (0,0), 0)
+       
+        img = np.array(Image.open(editedFileName).convert('L'))
 
-            saveFileName = saveFolder +'/'+ filename
+        img = cv.normalize(img, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
+        res, img = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
 
-            Image.fromarray(img).save(saveFileName)
+        cv.floodFill(img, None, (0,0), 0)
+   
+
+        self.mask = np.zeros(img.shape[:2],np.uint8)
+        newmask = img
+
+        self.mask[newmask == 0] = 0
+        self.mask[newmask == 255] = 1
+
+        maskName = ""
+        if type == "ref":
+            maskName = "Assets/BR_Module/Output/artwork_masks_ref/"+filename
+
+        if type == "test":
+            maskName = "Assets/BR_Module/Output/artwork_masks_test/"+filename
+
+        Image.fromarray(img).save(maskName)
+
+    
 
     def generateteFabricMask(self,folder,saveFolder):
 
@@ -548,9 +583,9 @@ class BRModule():
         self.generateUniformFabricEdge(registratedTestImages,edgeTestImages)
 
         #Creating uniform artwork mask
-        print("Creating uniform artwork masks...")
-        self.generateUniformArtWorkMask(edgeReferenceImages,artworkMasksReferenceImages)
-        self.generateUniformArtWorkMask(edgeTestImages,artworkMasksTestImages)
+        # print("Creating uniform artwork masks...")
+        # self.generateUniformArtWorkMask(edgeReferenceImages,artworkMasksReferenceImages)
+        # self.generateUniformArtWorkMask(edgeTestImages,artworkMasksTestImages)
 
         #Creating textured artwork Darfts..
         print("Creating textured artwork Darfts...")
@@ -563,14 +598,14 @@ class BRModule():
         self.sharpTexturedArtworkDraft(artworksDraftsTest)
 
         #Creating uniform artwork mask
-        print("Creating textured artwork masks...")
-        self.generateteTexturedArtworkMask(artworksDraftsRef,artworkMasksReferenceImages)
-        self.generateteTexturedArtworkMask(artworksDraftsTest,artworkMasksTestImages)
+        # print("Creating textured artwork masks...")
+        # self.generateteTexturedArtworkMask(artworksDraftsRef,artworkMasksReferenceImages)
+        # self.generateteTexturedArtworkMask(artworksDraftsTest,artworkMasksTestImages)
 
         #Creating uniform artwork mask
         print("Isolating fabric artworks...")
-        self.isolateUniformFabArtwork(outerRemReferenceImages,artworkMasksReferenceImages,artworksReferenceImages)
-        self.isolateUniformFabArtwork(registratedTestImages,artworkMasksTestImages,artworksTestImages)
+        self.isolateUniformFabArtwork(outerRemReferenceImages,'ref',artworksReferenceImages)
+        self.isolateUniformFabArtwork(registratedTestImages,'test',artworksTestImages)
 
         print('End Background Removal Module Execution...')
 
