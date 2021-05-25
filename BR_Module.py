@@ -289,22 +289,6 @@ class BRModule():
 
                 outputName = saveFolder+'/'+filename
                 cv.imwrite(outputName,self.output)
-
-
-
-    # def getUniformArtworkMask(self,img,filename,folder):
-
-    #     maskName = "Mask_"+filename
-
-    #     editedMaskFileName = folder +'/'+ maskName
-    #     maskImg = cv.imread(cv.samples.findFile(editedMaskFileName))
-    #     maskImg = cv.cvtColor(maskImg, cv.COLOR_BGR2GRAY)
-
-    #     self.mask = np.zeros(img.shape[:2],np.uint8)
-    #     newmask = maskImg
-
-    #     self.mask[newmask == 0] = 0
-    #     self.mask[newmask == 255] = 1
             
 
 
@@ -550,6 +534,7 @@ class BRModule():
         #delete created files
         print("Deleting created output images...")
         self.deleteGeneratedFiles(outerRemReferenceImages)
+        self.deleteGeneratedFiles(outerRemTestImages)
         self.deleteGeneratedFiles(registratedTestImages)
         self.deleteGeneratedFiles(edgeReferenceImages)
         self.deleteGeneratedFiles(edgeTestImages)
@@ -582,11 +567,6 @@ class BRModule():
         self.generateUniformFabricEdge(outerRemReferenceImages,edgeReferenceImages)
         self.generateUniformFabricEdge(registratedTestImages,edgeTestImages)
 
-        #Creating uniform artwork mask
-        # print("Creating uniform artwork masks...")
-        # self.generateUniformArtWorkMask(edgeReferenceImages,artworkMasksReferenceImages)
-        # self.generateUniformArtWorkMask(edgeTestImages,artworkMasksTestImages)
-
         #Creating textured artwork Darfts..
         print("Creating textured artwork Darfts...")
         self.generateteTexturedArtworkDarft(texSamples,outerRemReferenceImages,artworksDraftsRef)
@@ -596,11 +576,6 @@ class BRModule():
         print("Sharping textured artwork Darfts...")
         self.sharpTexturedArtworkDraft(artworksDraftsRef)
         self.sharpTexturedArtworkDraft(artworksDraftsTest)
-
-        #Creating uniform artwork mask
-        # print("Creating textured artwork masks...")
-        # self.generateteTexturedArtworkMask(artworksDraftsRef,artworkMasksReferenceImages)
-        # self.generateteTexturedArtworkMask(artworksDraftsTest,artworkMasksTestImages)
 
         #Creating uniform artwork mask
         print("Isolating fabric artworks...")
