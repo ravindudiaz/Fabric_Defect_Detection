@@ -2,7 +2,7 @@ import numpy as np
 import cv2 as cv
 import os
 import matplotlib.pyplot as plt
-from PIL import Image
+from PIL import Image,ImageFilter
 from os import path
 
 
@@ -12,14 +12,13 @@ class BRModule():
     resizeMark = 1800
     resizerVal = .3
     
-    def removeOuterBackground(self,folder,saveFolder):
+    def removeOuterBackground(self,folder,saveFolder,type):
 
         for filename in os.listdir(folder):
 
             editedFileName = folder +'/'+ filename
             img = cv.imread(cv.samples.findFile(editedFileName))
             
-            height = img.shape[0]
             width = img.shape[1]
 
             if width > self.resizeMark :
@@ -39,7 +38,7 @@ class BRModule():
             self.getOptimalThresholdVal(self.img_copy)
 
             # generating mask for grabcut
-            self.generateFabricMask(self.img_copy,filename)
+            self.generateFabricMask(self.img_copy,filename,type)
 
             try:
                 bgdmodel = np.zeros((1, 65), np.float64)
@@ -125,7 +124,7 @@ class BRModule():
 
     
 
-    def generateFabricMask(self,image,name):
+    def generateFabricMask(self,image,name,type):
         
         img = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         _,mask = cv.threshold(img,self.minThresholdVal,self.maxThresholdVal,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
@@ -156,9 +155,15 @@ class BRModule():
         self.mask[newmask == 0] = 0
         self.mask[newmask == 255] = 1
 
-        # nameWithMask = "ref_masks/Mask_"+name
-        # nameWithMask = "test_masks/Mask_"+name      
-        # cv.imwrite(nameWithMask, newmask)
+        nameWithMask = ""
+
+        if type == "ref":
+            nameWithMask = "Assets/BR_Module/Output/fabric_masks_ref/"+name
+
+        if type == "test":
+            nameWithMask = "Assets/BR_Module/Output/fabric_masks_test/"+name
+              
+        cv.imwrite(nameWithMask, newmask)
 
 
 
@@ -199,6 +204,7 @@ class BRModule():
 
             if n > 4:
                 # x, y, w, h = cv.boundingRect(sorteddata[n])
+                
                 cv.drawContours(image_binary, [sorteddata[n]],
                         -1, (255, 255, 255), -1)
                 # cv.rectangle(image_binary, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -241,7 +247,7 @@ class BRModule():
 
 
     
-    def isolateUniformFabArtwork(self,folder,type,saveFolder):
+    def isolateFabArtwork(self,folder,type,saveFolder):
 
         for filename in os.listdir(folder):
 
@@ -254,19 +260,14 @@ class BRModule():
                 width = img.shape[1]
 
 
-                # create copy of image
                 img = img.copy()
                 self.img = img
                 self.img_copy = self.img.copy()
 
-                # allocate array for output
                 self.output = np.zeros(self.img.shape, np.uint8)
 
-                # get optimal threshold value using OTSU method
                 self.getOptimalThresholdVal(self.img_copy)
 
-                # generating mask for grabcut
-                # self.getUniformArtworkMask(self.img_copy,filename,maskFolder)
 
                 if 'uni_' in filename:
                     self.generateUniformArtWorkMask(filename,type)
@@ -386,6 +387,10 @@ class BRModule():
 
             cv.imwrite(editedFileName, opening)
 
+            image = Image.open(editedFileName)
+            image = image.filter(ImageFilter.MedianFilter(size=13))
+            image.save(editedFileName)
+
 
 
     def generateteTexturedArtworkMask(self,filename,type):
@@ -406,7 +411,6 @@ class BRModule():
 
         cv.floodFill(img, None, (0,0), 0)
    
-
         self.mask = np.zeros(img.shape[:2],np.uint8)
         newmask = img
 
@@ -421,25 +425,6 @@ class BRModule():
             maskName = "Assets/BR_Module/Output/artwork_masks_test/"+filename
 
         Image.fromarray(img).save(maskName)
-
-    
-
-    def generateteFabricMask(self,folder,saveFolder):
-
-        for filename in os.listdir(folder):
-
-            editedFileName = folder +'/'+ filename
-            
-            img = np.array(Image.open(editedFileName).convert('L'))
-
-            img = cv.normalize(img, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
-            res, img = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
-
-            cv.floodFill(img, None, (0,0), 0)
-
-            saveFileName = saveFolder +'/'+ filename
-
-            Image.fromarray(img).save(saveFileName)
 
 
 
@@ -531,7 +516,6 @@ class BRModule():
             import traceback
             traceback.print_exc()
 
-        #delete created files
         print("Deleting created output images...")
         self.deleteGeneratedFiles(outerRemReferenceImages)
         self.deleteGeneratedFiles(outerRemTestImages)
@@ -548,39 +532,27 @@ class BRModule():
         self.deleteGeneratedFiles(fabricMasksTest)
 
         print("Removing outer backgrounds...")
-        #Remove outer background of reference images
-        self.removeOuterBackground(referenceImages,outerRemReferenceImages)
-        #Remove outer background of test images
-        self.removeOuterBackground(testImages,outerRemTestImages)
+        self.removeOuterBackground(referenceImages,outerRemReferenceImages,"ref")
+        self.removeOuterBackground(testImages,outerRemTestImages,"test")
 
-        #Registrated test images using reference point
         print("Image Registrating...")
         self.registratedMachingFiles(outerRemReferenceImages,outerRemTestImages,registratedTestImages)
 
-        #Creating uniform artwork mask
-        print("Creating fabric masks...")
-        self.generateteFabricMask(outerRemReferenceImages,fabricMasksRef)
-        self.generateteFabricMask(registratedTestImages,fabricMasksTest)
-
-        #Creating uniform fabric edges
         print("Creating uniform fabric edges...")
         self.generateUniformFabricEdge(outerRemReferenceImages,edgeReferenceImages)
         self.generateUniformFabricEdge(registratedTestImages,edgeTestImages)
 
-        #Creating textured artwork Darfts..
-        print("Creating textured artwork Darfts...")
+        print("Creating textured artwork Drafts...")
         self.generateteTexturedArtworkDarft(texSamples,outerRemReferenceImages,artworksDraftsRef)
         self.generateteTexturedArtworkDarft(texSamples,registratedTestImages,artworksDraftsTest)
 
-        #Sharping textured artwork Darfts..
         print("Sharping textured artwork Darfts...")
         self.sharpTexturedArtworkDraft(artworksDraftsRef)
         self.sharpTexturedArtworkDraft(artworksDraftsTest)
 
-        #Creating uniform artwork mask
         print("Isolating fabric artworks...")
-        self.isolateUniformFabArtwork(outerRemReferenceImages,'ref',artworksReferenceImages)
-        self.isolateUniformFabArtwork(registratedTestImages,'test',artworksTestImages)
+        self.isolateFabArtwork(outerRemReferenceImages,'ref',artworksReferenceImages)
+        self.isolateFabArtwork(registratedTestImages,'test',artworksTestImages)
 
         print('End Background Removal Module Execution...')
 
