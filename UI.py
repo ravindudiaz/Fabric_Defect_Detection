@@ -102,9 +102,9 @@ s1 = ttk.Style()
 segmentMatchReportWindow = None
 
 
-ref_img_thumb = 'Assets/src/ref.jpg'
+ref_img_thumb = 'Assets/src/ref_img_thumb.jpg'
 
-test_img_thumb = 'Assets/src/ref.jpg'
+test_img_thumb = 'Assets/src/test_img_thumb.jpg'
 
 
 ref_image =ImageTk.PhotoImage(Image.open(ref_img_thumb))
@@ -283,6 +283,7 @@ def detectRefFeatures():
     global ref_dimensions
     global ref_segs
     ref_features, ref_thresholded_segs, ref_dimensions, ref_segs = qa.detect_features(no_of_matching_ref_segs, 1, matching_ref_loc, matching_test_loc, ref_or_cloth_loc)
+    messagebox.showinfo("Extraction success", "Reference image features extracted successfully!")
 
 
 
@@ -301,6 +302,8 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     qa.display_arr(rotation_def, "Rotation")
     qa.display_arr(color_def, "Color")
     qa.display_arr(minmax_def, "Minima Maxima")
+
+    messagebox.showinfo("Comparison Success!", "Comparison complete")
 
 
 ##### ref image UI
