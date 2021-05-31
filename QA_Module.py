@@ -440,7 +440,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         minmax_def = []
 
         #To be displayed in ui
-        common_def_image = cv2.imread("./Assets/BR_Module/uni_owl_blue1.JPG")  # Add the test segment location path here ----------------------------------------------------------------
+        common_def_image = cv2.imread("./Assets/BR_Module/owl_blue3.JPG")  # Add the test segment location path here ----------------------------------------------------------------
 
         shape_def_image = common_def_image
         size_def_image = common_def_image
@@ -476,8 +476,10 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                         # -----------------displaying the defected segment in the test artwork
                         shape_def_image = mark_defect(shape_def_image, thresh_seg)
-                        cv2.imshow("Defect View", shape_def_image )
+                        shape_def_disp = cv2.resize(shape_def_image, (900, 1200))
+                        cv2.imshow("Shape Defect View", shape_def_disp )
                         cv2.waitKey(0)
+                        cv2.destroyAllWindows()
                         # ---------------------------------------------------------------------
                 else:
                         #shape_deviation_measure
@@ -500,8 +502,10 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                 # -----------------displaying the defected segment in the test artwork
                                 shape_def_image = mark_defect(shape_def_image, thresh_seg)
-                                cv2.imshow("Defect View", shape_def_image)
+                                shape_def_disp = cv2.resize(shape_def_image, (900, 1200))
+                                cv2.imshow("Shape Defect View", shape_def_disp)
                                 cv2.waitKey(0)
+                                cv2.destroyAllWindows()
                                 # ---------------------------------------------------------------------
                         else:
                                 #Detect and Compare Size
@@ -523,8 +527,10 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                         # -----------------displaying the defected segment in the test artwork
                                         size_def_image = mark_defect(size_def_image, thresh_seg)
-                                        cv2.imshow("Defect View", size_def_image)
+                                        size_def_disp = cv2.resize(size_def_image, (900, 1200))
+                                        cv2.imshow("Size Defect View", size_def_disp)
                                         cv2.waitKey(0)
+                                        cv2.destroyAllWindows()
                                         # ---------------------------------------------------------------------
                                 else:
                                         #Detect and Compare Rotation
@@ -549,6 +555,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 rotation_def_image = mark_defect(rotation_def_image, thresh_seg)
                                                 cv2.imshow("Defect View", rotation_def_image)
                                                 cv2.waitKey(0)
+                                                cv2.destroyAllWindows()
                                                 # ---------------------------------------------------------------------
 
                                         else:
@@ -578,8 +585,10 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                                         # -----------------displaying the defected segment in the test artwork
                                                         placement_def_image = mark_defect(placement_def_image, thresh_seg)
-                                                        cv2.imshow("Defect View", placement_def_image)
+                                                        placement_def_disp = cv2.resize(placement_def_image, (900, 1200))
+                                                        cv2.imshow("Defect View", placement_def_disp)
                                                         cv2.waitKey(0)
+                                                        cv2.destroyAllWindows()
                                                         #---------------------------------------------------------------------
 
 
@@ -610,6 +619,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
 
                                                                 # -------------------Displaying defect-------------
+                                                                print("Test translate ", test_translate)
                                                                 prep_diff_nz = np.argwhere(prep_diff)
                                                                 # print(prep_diff_nz)
                                                                 for pt in prep_diff_nz:
@@ -619,13 +629,15 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 new_pos = prep_diff_nz
 
                                                                 for px_pos in new_pos:
+                                                                        print(1)
                                                                         common_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
                                                                         minmax_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
 
-                                                                minmax_def_image = cv2.resize(minmax_def_image, (900,1200))
+                                                                minmax_def_disp = cv2.resize(minmax_def_image, (900,1200))
 
-                                                                cv2.imshow("Defect View", minmax_def_image)
+                                                                cv2.imshow("Minmax Defect View", minmax_def_disp)
                                                                 cv2.waitKey(0)
+                                                                cv2.destroyAllWindows()
 
                                                                 no_def_segs += 1
                                                                 minmax_def.append([i, test_seg])
@@ -676,8 +688,10 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                                                         #------------------------------------------
                                                                         color_def_image = mark_defect(color_def_image, thresh_seg)
-                                                                        cv2.imshow("Defect View", color_def_image)
+                                                                        color_def_disp = cv2.resize(color_def_image,(900,1200))
+                                                                        cv2.imshow("Color Defect View", color_def_disp)
                                                                         cv2.waitKey(0)
+                                                                        cv2.destroyAllWindows()
                                                                         #------------------------------------------
 
         print("Number of defected segemnts : ",no_def_segs)
@@ -823,6 +837,9 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
 
 def resize_segments(thr_seg, ref_dimensions):
         nz_locs = np.argwhere(thr_seg)
+        thr_disp = cv2.resize(thr_seg, (900,1200))
+        cv2.imshow("thresh seg to check test translate", thr_disp)
+        cv2.waitKey(0)
         # print(nz_locs)
         x_arr = []
         y_arr = []
@@ -1039,8 +1056,8 @@ def detect_color(segment, thresholded_segment):
 
 def mark_defect(test_img, thresh_seg):
         img_def = test_img
-        img_def = cv2.resize(img_def,(900,1200))
-        thresh_seg = cv2.resize(thresh_seg,(900, 1200))
+        # img_def = cv2.resize(img_def,(900,1200))
+        # thresh_seg = cv2.resize(thresh_seg,(900, 1200))
         thresh_pos = np.argwhere(thresh_seg)
         for pt in thresh_pos:
                 img_def[pt[0]][pt[1]] = [0, 255, 0]
