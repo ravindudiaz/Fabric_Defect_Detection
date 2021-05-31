@@ -608,22 +608,28 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                                                 # temp_image = common_def_image
 
-                                                                # common_def_image[
-                                                                # test_translate[0]:test_translate[0] + prep_diff.shape[
-                                                                #         0],
-                                                                # test_translate[2]:test_translate[2] + prep_diff.shape[
-                                                                                        #         1]] = prep_diff
 
-                                                                # for i in range(test_translate[2],test_translate[2] + prep_diff.shape[1]):
-                                                                #         for j in range( test_translate[0],test_translate[0] + prep_diff.shape[0]):
-                                                                #                 prep_diff
+                                                                # -------------------Displaying defect-------------
+                                                                prep_diff_nz = np.argwhere(prep_diff)
+                                                                # print(prep_diff_nz)
+                                                                for pt in prep_diff_nz:
+                                                                        pt[0] = pt[0] + test_translate[0]
+                                                                        pt[1] = pt[1] + test_translate[2]
 
+                                                                new_pos = prep_diff_nz
 
-                                                                # cv2.imshow("Defected - MinMax", disp_img_minmax)
-                                                                # cv2.waitKey(0)
+                                                                for px_pos in new_pos:
+                                                                        common_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
+                                                                        minmax_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
+
+                                                                minmax_def_image = cv2.resize(minmax_def_image, (900,1200))
+
+                                                                cv2.imshow("Defect View", minmax_def_image)
+                                                                cv2.waitKey(0)
+
                                                                 no_def_segs += 1
                                                                 minmax_def.append([i, test_seg])
-                                                                common_def_image = mark_defect(common_def_image,thresh_seg)
+
 
                                                         else:
                                                                 #Detect and Compare Color
@@ -723,6 +729,19 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
         cont_arr, hierarchy = cv2.findContours(thresh_gdiff, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         # cont_arr, hierarchy = cv2.findContours(diff_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
+        #----------------------------------------------------------------------------------------------
+
+        rcrop_seg = cv2.merge((rcrop_seg, rcrop_seg, rcrop_seg))
+        tcrop_seg = cv2.merge((tcrop_seg, tcrop_seg, tcrop_seg))
+
+        prepr_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
+        prept_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
+
+        prepr_diff[0:rcrop_seg.shape[0], 0:rcrop_seg.shape[1]] = rcrop_seg
+        prept_diff[0:tcrop_seg.shape[0], 0:tcrop_seg.shape[1]] = tcrop_seg
+
+        prep_diff = prepr_diff - prept_diff
+        #----------------------------------------------------------------------------------------------
         if len(cont_arr) == 0:
                 diff_image = test - ref
 
@@ -743,6 +762,8 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
                 # cv2.waitKey(0)
 
                 cont_arr, hierarchy = cv2.findContours(thresh_gdiff, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+                prep_diff = prept_diff - prepr_diff
 
 
         print(n,"    ", len(cont_arr))
@@ -778,24 +799,24 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
                 if cnt_area/segmentArea >= 0.005 :
                         def_contours.append(cnt)
 
-        rcrop_seg = cv2.merge((rcrop_seg, rcrop_seg, rcrop_seg))
-        tcrop_seg = cv2.merge((tcrop_seg, tcrop_seg, tcrop_seg))
-
-
-        prepr_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
-        prept_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
-
-        prepr_diff[0:rcrop_seg.shape[0], 0:rcrop_seg.shape[1]] = rcrop_seg
-        prept_diff[0:tcrop_seg.shape[0], 0:tcrop_seg.shape[1]] = tcrop_seg
+        # rcrop_seg = cv2.merge((rcrop_seg, rcrop_seg, rcrop_seg))
+        # tcrop_seg = cv2.merge((tcrop_seg, tcrop_seg, tcrop_seg))
+        #
+        #
+        # prepr_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
+        # prept_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
+        #
+        # prepr_diff[0:rcrop_seg.shape[0], 0:rcrop_seg.shape[1]] = rcrop_seg
+        # prept_diff[0:tcrop_seg.shape[0], 0:tcrop_seg.shape[1]] = tcrop_seg
 
         # det_diff = prepr_diff - prept_diff
         _, det_diff = cv2.threshold(gauss_diff, 254, 255, cv2.THRESH_BINARY)
 
 
         # crop_diff = rcrop_seg - tcrop_seg
-        prep_diff = prept_diff - prepr_diff
-        cv2.imshow("Prep diff",prep_diff)
-        cv2.waitKey(0)
+        # prep_diff = prept_diff - prepr_diff
+        # cv2.imshow("Prep diff",prep_diff)
+        # cv2.waitKey(0)
         # crop_diff = 0
         return def_contours, ref_thresh_segs[n], thresh_gdiff, test_translate, prep_diff, det_diff
 
