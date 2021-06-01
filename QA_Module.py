@@ -68,9 +68,9 @@ import json
 
 
 def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatching_ref_segs, no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
-                   ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict, nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc):
+                   ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict, nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc):
         # To be displayed in ui
-        common_def_image = cv2.imread("./Assets/BR_Module/uni_umbrella_bear1.JPG")  # Add the test segment location path here ----------------------------------------------------------------
+        common_def_image = cv2.imread(test_artwork_loc)  # Add the test segment location path here ----------------------------------------------------------------
         print("Conflict Segment Matching Started...........................................................")
         print(nm_test_loc)
         if no_of_nonmatching_ref_segs != 0 and no_of_test_conflict_segs == 0:
@@ -91,7 +91,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 cv2.imshow("Missing segments", common_def_image)
                                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
-        if no_of_nonmatching_test_segs != 0:
+        elif no_of_nonmatching_test_segs != 0:
                 print("Checking for Color Patch/ Fade or Damaged printwork")
                 for segf in nmt_file_list:
                                 print("Color patch inspection..........................")
@@ -115,11 +115,11 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 ref_dims = ref_image.shape
 
                                 #Image for the comparison with the ref artwork
-                                comp_image = np.zeros((ref_dims[0], ref_dims[1], 3), np.uint8)*255
-                                # comp_image = cv2.merge((comp_image, comp_image, comp_image))
+                                comp_image = np.zeros((ref_dims[0], ref_dims[1], 1), np.uint8)*255
+                                comp_image = cv2.merge((comp_image, comp_image, comp_image))
 
                                 for pos in def_seg_nz:
-                                        comp_image[pos[1]][pos[0]] = ref_image[pos[1]][pos[0]]
+                                        comp_image[pos[0]][pos[1]] = ref_image[pos[0]][pos[1]]
 
                                 comp_disp = cv2.resize(comp_image, (900,1200))
                                 cv2.imshow("Comp_image init", comp_disp)
@@ -144,15 +144,22 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 if mean_deviation_measure >= 0.07:
                                         print("Color patch detected...")
                                         for pos in def_seg_nz:
-                                                ref_image[pos[1]][pos[0]] = [0,255,0]
-                                        comp_det_disp = cv2.resize(comp_image,(900,1200))
-                                        cv2.imshow("Comp_image detected", comp_det_disp)
+                                                common_def_image[pos[0]][pos[1]] = [0,255,0]
+                                        for pos in def_seg_nz:
+                                                comp_image[pos[0]][pos[1]] = [0,255,0]
+
+                                        common_def_disp = cv2.resize(common_def_image,(900,1200))
+                                        cv2.imshow("Comp_image detected", common_def_disp)
                                         cv2.waitKey(0)
                                 else:
                                         print("Damaged Printwork detected...")
-                                        cv2.imshow("damaged seg ", segf)
+                                        for pos in def_seg_nz:
+                                                common_def_image[pos[0]][pos[1]] = [0,255,0]
+                                        common_def_disp = cv2.resize(common_def_image, (900, 1200))
+                                        cv2.imshow("Common def image", common_def_disp)
                                         cv2.waitKey(0)
 
+                                def_seg_disp = cv2.resize(def_seg, (900,1200))
                                 cv2.imshow(segf , def_seg)
                                 cv2.waitKey(0)
                                 cv2.destroyAllWindows()
@@ -286,7 +293,7 @@ def detect_features(no_of_matching_ref_segs, ref_img_check, matching_ref_loc, ma
         print("Reference Features :",len(ref_features))
         return ref_features, thresholded_segments, dimensions, ref_segs
 
-def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions, ref_segs, no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc):
+def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions, ref_segs, no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc):
         print("Detect and Match test image stage reached...........................")
 
         no_def_segs = 0
@@ -299,7 +306,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         minmax_def = []
 
         #To be displayed in ui
-        common_def_image = cv2.imread("./Assets/BR_Module/umbrella_bear1.JPG")  # Add the test segment location path here ----------------------------------------------------------------
+        common_def_image = cv2.imread(test_artwork_loc)  # Add the test segment location path here ----------------------------------------------------------------
 
         shape_def_image = common_def_image
         size_def_image = common_def_image

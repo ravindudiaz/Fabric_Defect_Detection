@@ -31,7 +31,7 @@ test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed/uni_nike_dark_or
 ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/umbrella_bear.JPG"
 
 #test isolated artwork loc
-test_artwork_loc = "./Assets/BR_Module/Output/test/isolated_artwork/"
+test_artwork_loc = "./Assets/BR_Module/Output/test/isolated_artwork/umbrella_bear1.JPG"
 
 #might need to be adjusted as per segment rois
 ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
@@ -291,11 +291,11 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
                       no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
-                      nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc)
+                      nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc)
 
     shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
         no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
-        no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc)
+        no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc)
 
     qa.display_arr(shape_def, "Shape")
     qa.display_arr(size_def, "Size")
