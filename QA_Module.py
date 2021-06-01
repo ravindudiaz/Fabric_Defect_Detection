@@ -70,32 +70,34 @@ import json
 def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatching_ref_segs, no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict, nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc):
         # To be displayed in ui
-        common_def_image = cv2.imread("./Assets/BR_Module/uni_owl_blue1.JPG")  # Add the test segment location path here ----------------------------------------------------------------
+        common_def_image = cv2.imread("./Assets/BR_Module/uni_umbrella_bear1.JPG")  # Add the test segment location path here ----------------------------------------------------------------
         print("Conflict Segment Matching Started...........................................................")
         print(nm_test_loc)
         if no_of_nonmatching_ref_segs != 0 and no_of_test_conflict_segs == 0:
                 print("Missing segment in test artwork")
                 for segf in nmr_file_list:
-                        if segf.endswith('.jpg') or segf.endswith('.jpeg'):
+                        # if segf.endswith('.jpg') or segf.endswith('.jpeg'):
                                 print("File", segf)
                                 def_seg = cv2.imread(nm_ref_loc + segf)
                                 def_seg_gr = cv2.cvtColor(def_seg, cv2.COLOR_BGR2GRAY)
                                 def_seg_thresh = cv2.threshold(def_seg_gr, 10, 255, cv2.THRESH_BINARY)
+                                print("def thresh seg",def_seg_thresh)
                                 # if def_seg is not None:
                                 # print("segf",def_seg)
                                 def_seg_disp = cv2.resize(def_seg, (1200,900))
                                 #--------------------------
-                                common_def_image = mark_defect(common_def_image, def_seg_thresh)
+                                # common_def_image = mark_defect(common_def_image, cv2.bitwise_not(def_seg_thresh))
                                 #--------------------------
                                 cv2.imshow("Missing segments", common_def_image)
                                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
-        elif no_of_nonmatching_test_segs != 0:
+        if no_of_nonmatching_test_segs != 0:
                 print("Checking for Color Patch/ Fade or Damaged printwork")
                 for segf in nmt_file_list:
-                        if segf.endswith('.jpg') or segf.endswith('.jpeg'):
+                                print("Color patch inspection..........................")
+                        # if segf.endswith('.jpg') or segf.endswith('.jpeg'):
                                 print(segf)
-                                def_seg = cv2.imread(nm_test_loc + segf)
+                                def_seg = cv2.imread(nm_test_loc + segf) #------------------------------------------------------------
                                 def_seg_nz = np.argwhere(def_seg)
                                 defx = []
                                 defy = []
@@ -112,30 +114,39 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 ref_image = cv2.imread(ref_artwork_loc)
                                 ref_dims = ref_image.shape
 
-                                comp_image = np.zeros((ref_dims[0], ref_dims[1], 3), np.uint32)
+                                #Image for the comparison with the ref artwork
+                                comp_image = np.zeros((ref_dims[0], ref_dims[1], 3), np.uint8)*255
+                                # comp_image = cv2.merge((comp_image, comp_image, comp_image))
 
                                 for pos in def_seg_nz:
                                         comp_image[pos[1]][pos[0]] = ref_image[pos[1]][pos[0]]
-                                cv2.imshow("Comp_image", comp_image)
+
+                                comp_disp = cv2.resize(comp_image, (900,1200))
+                                cv2.imshow("Comp_image init", comp_disp)
                                 cv2.waitKey(0)
 
                                 # ref_image_section = ref_image[defy_min:defy_max, defx_min:defx_max]
                                 # cv2.imshow("ref_image_section", ref_image_section)
 
                                 #Average color of segf
-                                (B, G, R) = cv2.split(segf)
+                                (B, G, R) = cv2.split(def_seg)
                                 segf_mean = (np.mean(B) + np.mean(G) + np.mean(R))/3
+                                print("Defect area color mean :", segf_mean)
 
                                 #Average color of ref_image
                                 (Bc, Gc, Rc) = cv2.split(comp_image)
                                 comp_image_mean = (np.mean(Bc) + np.mean(Gc) + np.mean(Rc))/3
+                                print("Reference area color mean :", comp_image_mean)
 
-                                mean_measure = abs(segf_mean - comp_image_mean)/segf_mean
-                                if mean_measure >= 0.05:
+                                mean_deviation_measure = abs(segf_mean - comp_image_mean)/segf_mean
+                                print("Mean deviation measure ", mean_deviation_measure)
+
+                                if mean_deviation_measure >= 0.07:
                                         print("Color patch detected...")
                                         for pos in def_seg_nz:
                                                 ref_image[pos[1]][pos[0]] = [0,255,0]
-                                        cv2.imshow("Comp_image", comp_image)
+                                        comp_det_disp = cv2.resize(comp_image,(900,1200))
+                                        cv2.imshow("Comp_image detected", comp_det_disp)
                                         cv2.waitKey(0)
                                 else:
                                         print("Damaged Printwork detected...")
@@ -146,6 +157,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 cv2.waitKey(0)
                                 cv2.destroyAllWindows()
         elif no_of_ref_conflict_segs != 0:
+                print("Hit....................................")
                 for i in range(len(nmr_conflict_file_list)):
                         nmrc_seg = cv2.imread(nonmatching_ref_conflict + "C_" + str(i))
                         nmrc_seg_gr = cv2.cvtColor(nmrc_seg, cv2.COLOR_BGR2GRAY)
@@ -208,159 +220,6 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
         print("Conflict Segment Matching Done...............................................")
 
 
-def check_artwork_position(ref_artwork_loc, ref_cloth_loc, test_artwork_loc, test_cloth_loc, ref_or_cloth_loc, test_or_cloth_loc):
-
-        test_or = cv2.imread(test_or_cloth_loc)  #outer background removed test image
-        test_or_gr = cv2.cvtColor(test_or, cv2.COLOR_BGR2GRAY)
-        ref_artwork = cv2.imread(ref_artwork_loc) #isolated artwork
-
-        ref_artwork_gr = cv2.cvtColor(ref_artwork, cv2.COLOR_BGR2GRAY)
-        nz_artwork_locs = np.argwhere(ref_artwork)
-
-        x = []
-        y = []
-        for pt in nz_artwork_locs:
-                x.append(pt[1])
-                y.append(pt[0])
-        x = sorted(x)
-        y = sorted(y)
-
-        ymin = y[0]
-        ymax = y[len(y) - 1]
-        xmin = x[0]
-        xmax = x[len(x)-1]
-        cropped_artwork = ref_artwork[ ymin:ymax , xmin:xmax ]
-        cropped_artwork_gr = cv2.cvtColor(cropped_artwork, cv2.COLOR_BGR2GRAY)
-        # cropped_artwork_gr = cv2.cvtColor(ref_artwork, cv2.COLOR_BGR2GRAY)
-
-        #SIFT Operator
-        sift = cv2.SIFT_create()
-        kpr, desr = sift.detectAndCompute(cropped_artwork_gr, None) #For the cropped artwork
-        kpt, dest = sift.detectAndCompute(ref_artwork_gr, None)   #For the outer removed test cloth
-
-        #Using FLANN BASED matcher
-        flann = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
-        matches = flann.match(desr, dest)
-        print("FLANN matches : ",len(matches))
-
-        matches = sorted(matches, key=lambda x: x.distance)
-
-        if len(kpt) >= len(kpr):
-                matches = matches[:(len(kpr)-1)]
-        else:
-                matches = matches[:(len(kpt)-1)]
-
-        matches = list(filter(lambda x: x.distance <= 100, matches))
-
-        points1 = np.zeros((len(matches), 2), dtype=np.float32)
-        points2 = np.zeros((len(matches), 2), dtype=np.float32)
-
-        print(len(kpt), len(kpr))
-        # if len(kpr)
-        for l, match in enumerate(matches):
-                points1[l, :] = kpt[match.queryIdx].pt
-                points2[l, :] = kpr[match.queryIdx].pt
-        h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
-
-        matching_result = cv2.drawMatches( cropped_artwork_gr, kpr, test_or_gr, kpt,matches[:100], None)
-        # print(mask)
-        matching_result = cv2.resize(matching_result,(1920, 1320))
-        cv2.imshow("Matching Result ", matching_result)
-        cv2.waitKey(0)
-
-        #Find the relevent keypoints that should be taken from the test and ref artworks for comparison
-        ransac_count = 0
-        ransac_pos = []
-        for k in range(len(mask)):
-                if mask[k] == [1]:
-                        ransac_count += 1
-                        ransac_pos.append(k)
-        print(ransac_count)
-        print(ransac_pos)
-
-        ref_pois = []
-        test_pois = []
-
-        for pos in ransac_pos:
-                ref_pois.append([int(kpr[pos].pt[0]), int(kpr[pos].pt[1])])
-                test_pois.append([int(kpt[pos].pt[0]), int(kpt[pos].pt[1])])
-        print("Ref printwork pois  : ", ref_pois)
-        print("Test printwork pois : ", test_pois)
-
-        #Ref Cloth mask or the Outer removed cloth - ref ----------------------
-        ref_or_cloth = cv2.imread(ref_or_cloth_loc)
-        ref_or_cloth_gr = cv2.cvtColor(ref_or_cloth, cv2.COLOR_BGR2GRAY)
-
-        ref_or_cloth_nz = np.argwhere(ref_or_cloth_gr)
-        # print(ref_or_cloth_nz)
-        xr = []
-        yr = []
-        for pt in ref_or_cloth_nz:
-                xr.append(pt[1])
-                yr.append(pt[0])
-        xr = sorted(x)
-        yr = sorted(y)
-        xr_max = x[len(x)-1]
-        xr_min = x[0]
-        yr_max = y[len(y)-1]
-        yr_min = y[0]
-        xr_diff = xr_max - xr_min
-
-        #Ref image reference points
-
-        pr1 = [xr_min + int(xr_diff*(1/3)), yr_min]
-        pr2 = [xr_min + int(xr_diff*(2/3)), yr_min]
-        rtotal_distance_1 = 0
-        rtotal_distance_2 = 0
-        for pt in ref_pois:
-                rdist1 = (pt[0] - pr1[0])**2 + (pt[1]-pr1[0])**2
-                rdist2 = (pt[0] - pr2[0])**2 + (pt[1]-pr2[0])**2
-                rtotal_distance_1 += rdist1
-                rtotal_distance_2 += rdist2
-
-        rdist = (rtotal_distance_1/len(ref_pois)) + (rtotal_distance_2/len(ref_pois))
-        print("Reference printwork distance : ", rdist)
-
-
-        # Test Cloth mask or the Outer removed cloth - Test --------------------------
-        test_or_cloth = cv2.imread(test_or_cloth_loc)
-        test_or_cloth_gr = cv2.cvtColor(test_or_cloth, cv2.COLOR_BGR2GRAY)
-
-        test_or_cloth_nz = np.argwhere(test_or_cloth_gr)
-        xt = []
-        yt = []
-        for pt in test_or_cloth_nz:
-                xt.append(pt[1])
-                yt.append(pt[0])
-        xt = sorted(xt)
-        yt = sorted(yt)
-        xt_max = xt[len(xt) - 1]
-        xt_min = xt[0]
-        yt_max = yt[len(yt) - 1]
-        yt_min = yt[0]
-
-        # Test image reference points
-
-        pt1 = [xt_min + int(xr_diff * (1 / 3)), yt_min]
-        pt2 = [xt_min + int(xr_diff * (2 / 3)), yt_min]
-        ttotal_distance_1 = 0
-        ttotal_distance_2 = 0
-        for pt in ref_pois:
-                dist1 = (pt[0] - pt1[0]) ** 2 + (pt[1] - pt1[0]) ** 2
-                dist2 = (pt[0] - pt2[0]) ** 2 + (pt[1] - pt2[0]) ** 2
-                ttotal_distance_1 += dist1
-                ttotal_distance_2 += dist2
-
-        tdist = (ttotal_distance_1 / len(test_pois)) + (ttotal_distance_2 / len(test_pois))
-
-        print("test printwork distance : ", tdist)
-
-        dist_diff = abs(tdist - rdist) / rdist
-
-        print("Distance difference : ", dist_diff)
-
-        if dist_diff >= 0.16:
-                print("Printwork position defect...")
 
 
 
@@ -440,7 +299,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         minmax_def = []
 
         #To be displayed in ui
-        common_def_image = cv2.imread("./Assets/BR_Module/owl_blue3.JPG")  # Add the test segment location path here ----------------------------------------------------------------
+        common_def_image = cv2.imread("./Assets/BR_Module/umbrella_bear1.JPG")  # Add the test segment location path here ----------------------------------------------------------------
 
         shape_def_image = common_def_image
         size_def_image = common_def_image
@@ -462,7 +321,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                 # Detect and Compare Shape
                 huMoments, moments, thresh_seg = detect_shape(gr_test_seg)
                 print("Hu7", huMoments[6])
-                if ref_features[i][0]*huMoments[6] < 0:
+                if ref_features[i][0]*huMoments[6] < 0 and abs(ref_features[i][0]/huMoments[6] <= 1.05 and ref_features[i][0] >= 0.95):
                         shape_defect = {
                                 "type": "Shape Error",
                                 "status": "Mirrored segment"
@@ -553,7 +412,8 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 common_def_image = mark_defect(common_def_image, thresh_seg)
                                                 # -----------------displaying the defected segment in the test artwork
                                                 rotation_def_image = mark_defect(rotation_def_image, thresh_seg)
-                                                cv2.imshow("Defect View", rotation_def_image)
+                                                rotation_def_disp = cv2.resize(rotation_def_image, (900, 1200))
+                                                cv2.imshow("Rotation Defect View", rotation_def_disp)
                                                 cv2.waitKey(0)
                                                 cv2.destroyAllWindows()
                                                 # ---------------------------------------------------------------------
@@ -579,14 +439,14 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                         }
                                                         placement_defect_json = json.dumps(placement_defect)
                                                         no_def_segs += 1
-                                                        placement_defect_image = mark_defect(test_seg, thresh_seg)
+                                                        # placement_defect_image = mark_defect(test_seg, thresh_seg)
                                                         placement_def.append([i, test_seg])
                                                         common_def_image = mark_defect(common_def_image, thresh_seg)
 
                                                         # -----------------displaying the defected segment in the test artwork
                                                         placement_def_image = mark_defect(placement_def_image, thresh_seg)
                                                         placement_def_disp = cv2.resize(placement_def_image, (900, 1200))
-                                                        cv2.imshow("Defect View", placement_def_disp)
+                                                        cv2.imshow("Placement Defect View", placement_def_disp)
                                                         cv2.waitKey(0)
                                                         cv2.destroyAllWindows()
                                                         #---------------------------------------------------------------------
@@ -629,7 +489,6 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 new_pos = prep_diff_nz
 
                                                                 for px_pos in new_pos:
-                                                                        print(1)
                                                                         common_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
                                                                         minmax_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
 
@@ -810,8 +669,10 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
         def_contours = []
         for cnt in cont_arr:
                 cnt_area = cv2.contourArea(cnt)
-                if cnt_area/segmentArea >= 0.005 :
+                area_percentage = cnt_area/segmentArea
+                if area_percentage >= 0.0053 :
                         def_contours.append(cnt)
+                        print("area% ", area_percentage)
 
         # rcrop_seg = cv2.merge((rcrop_seg, rcrop_seg, rcrop_seg))
         # tcrop_seg = cv2.merge((tcrop_seg, tcrop_seg, tcrop_seg))

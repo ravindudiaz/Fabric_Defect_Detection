@@ -11,24 +11,24 @@ import  cv2
 
 #location paths-----------------------------------------
 
-matching_ref_loc ="./Assets/Seg_Module/Output/uni_owl_blue/defect_1/matching_segments/reference/"
-matching_test_loc = "./Assets/Seg_Module/Output/uni_owl_blue/defect_1/matching_segments/defect/"
-nonmatching_ref_loc = "./Assets/Seg_Module/Output/uni_owl_blue/defect_1/none_matching_segments/reference/"
-nonmatching_test_loc="./Assets/Seg_Module/Output/uni_owl_blue/defect_1/none_matching_segments/test/"
-nonmatching_ref_conflict = "./Assets/Seg_Module/Output/uni_owl_blue/defect_1/conflict/ref/"
-nonmatching_test_conflict = "./Assets/Seg_Module/Output/uni_owl_blue/defect_1/conflict/test/"
+matching_ref_loc ="./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/matching_segments/reference/"
+matching_test_loc = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/matching_segments/defect/"
+nonmatching_ref_loc = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/none_matching_segments/reference/"
+nonmatching_test_loc="./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/none_matching_segments/defect/"
+nonmatching_ref_conflict = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/conflict/ref/"
+nonmatching_test_conflict = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/conflict/defect/"
 
 
 #ref artwork & cloth loc
 ref_artwork_mask_loc = "./Assets/BR_Module/Output/mask/ref/artwork/"
-ref_or_cloth_loc = "./Assets/BR_Module/Output/ref/outer_removed/uni_owl_blue_or.JPG"  #outer removed ref
+ref_or_cloth_loc = "./Assets/BR_Module/Output/ref/outer_removed/uni_nike_dark_or.JPG"  #outer removed ref
 
 #test artwork &cloth loc
 test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
-test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed/uni_owl_blue1_or.JPG"  #outer removed test
+test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed/uni_nike_dark_or.JPG"  #outer removed test
 
 #ref isolated artwork loc
-ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/uni_owl_blue.JPG"
+ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/umbrella_bear.JPG"
 
 #test isolated artwork loc
 test_artwork_loc = "./Assets/BR_Module/Output/test/isolated_artwork/"
@@ -292,6 +292,7 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
                       no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
                       nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc)
+
     shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
         no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
         no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc)
