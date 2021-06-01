@@ -8,79 +8,80 @@ import segment_matching
 from PIL import ImageTk, Image
 import QA_Module as qa
 import  cv2
+import BR_Module_For_UI as br
 
 #location paths-----------------------------------------
 
-matching_ref_loc ="./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/matching_segments/reference/"
-matching_test_loc = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/matching_segments/defect/"
-nonmatching_ref_loc = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/none_matching_segments/reference/"
-nonmatching_test_loc="./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/none_matching_segments/defect/"
-nonmatching_ref_conflict = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/conflict/ref/"
-nonmatching_test_conflict = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/conflict/defect/"
+# matching_ref_loc ="./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/matching_segments/reference/"
+# matching_test_loc = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/matching_segments/defect/"
+# nonmatching_ref_loc = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/none_matching_segments/reference/"
+# nonmatching_test_loc="./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/none_matching_segments/defect/"
+# nonmatching_ref_conflict = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/conflict/ref/"
+# nonmatching_test_conflict = "./Assets/Seg_Module/Output/uni_umbrella_bear/defect_1/conflict/defect/"
 
 
 #ref artwork & cloth loc
-ref_artwork_mask_loc = "./Assets/BR_Module/Output/mask/ref/artwork/"
-ref_or_cloth_loc = "./Assets/BR_Module/Output/ref/outer_removed/uni_nike_dark_or.JPG"  #outer removed ref
+# ref_artwork_mask_loc = "./Assets/BR_Module/Output/mask/ref/artwork/"
+# ref_or_cloth_loc = "./Assets/BR_Module/Output/ref/outer_removed/uni_nike_dark_or.JPG"  #outer removed ref
 
 #test artwork &cloth loc
-test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
-test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed/uni_nike_dark_or.JPG"  #outer removed test
+# test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
+# test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed/uni_nike_dark_or.JPG"  #outer removed test
 
 #ref isolated artwork loc
-ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/umbrella_bear.JPG"
+# ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/umbrella_bear.JPG"
 
 #test isolated artwork loc
-test_artwork_loc = "./Assets/BR_Module/Output/test/isolated_artwork/umbrella_bear1.JPG"
+# test_artwork_loc = "./Assets/BR_Module/Output/test/isolated_artwork/umbrella_bear1.JPG"
 
 #might need to be adjusted as per segment rois
-ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
-test_seg_roi_loc = "./Assets/QA_Module/Output/rois"
+# ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
+# test_seg_roi_loc = "./Assets/QA_Module/Output/rois"
 
 # matching_ref
-if os.path.exists(matching_ref_loc):
-        mr_file_list = os.listdir(matching_ref_loc)
-        no_of_matching_ref_segs = len(mr_file_list)
-else:
-        mr_file_list = []
-        no_of_matching_ref_segs = 0
+# if os.path.exists(matching_ref_loc):
+#         mr_file_list = os.listdir(matching_ref_loc)
+#         no_of_matching_ref_segs = len(mr_file_list)
+# else:
+#         mr_file_list = []
+#         no_of_matching_ref_segs = 0
 
 #matching_test
-mt_file_list = os.listdir(matching_test_loc)
-no_of_matching_test_segs = len(mt_file_list)
+# mt_file_list = os.listdir(matching_test_loc)
+# no_of_matching_test_segs = len(mt_file_list)
 
 #nonmatching_ref
-if os.path.exists(nonmatching_ref_loc):
-        nmr_file_list = os.listdir(nonmatching_ref_loc)
-        no_of_nonmatching_ref_segs = len(nmr_file_list)
-else:
-        nmr_file_list = []
-        no_of_nonmatching_ref_segs = 0
+# if os.path.exists(nonmatching_ref_loc):
+#         nmr_file_list = os.listdir(nonmatching_ref_loc)
+#         no_of_nonmatching_ref_segs = len(nmr_file_list)
+# else:
+#         nmr_file_list = []
+#         no_of_nonmatching_ref_segs = 0
 
 #non_matching_test
-if os.path.exists(nonmatching_test_loc):
-        nmt_file_list = os.listdir(nonmatching_test_loc)
-        no_of_nonmatching_test_segs = len(nmt_file_list)
-else:
-        nmt_file_list = []
-        no_of_nonmatching_test_segs = 0
+# if os.path.exists(nonmatching_test_loc):
+#         nmt_file_list = os.listdir(nonmatching_test_loc)
+#         no_of_nonmatching_test_segs = len(nmt_file_list)
+# else:
+#         nmt_file_list = []
+#         no_of_nonmatching_test_segs = 0
 
 
-#non_matching_ref_conflict
-if os.path.exists(nonmatching_ref_conflict):
-        nmr_conflict_file_list = os.listdir(nonmatching_ref_conflict)
-        no_of_ref_conflict_segs = len(nmr_conflict_file_list)
-else:
-        nmr_conflict_file_list = []
-        no_of_ref_conflict_segs = 0
+# #non_matching_ref_conflict
+# if os.path.exists(nonmatching_ref_conflict):
+#         nmr_conflict_file_list = os.listdir(nonmatching_ref_conflict)
+#         no_of_ref_conflict_segs = len(nmr_conflict_file_list)
+# else:
+#         nmr_conflict_file_list = []
+#         no_of_ref_conflict_segs = 0
 
-#non_matching_test_conflict
-if os.path.exists(nonmatching_test_conflict):
-        nmt_conflict_file_list = os.listdir(nonmatching_test_conflict)
-        no_of_test_conflict_segs = len(nmt_conflict_file_list)
-else:
-        nmt_conflict_file_list = []
-        no_of_test_conflict_segs = 0
+# #non_matching_test_conflict
+# if os.path.exists(nonmatching_test_conflict):
+#         nmt_conflict_file_list = os.listdir(nonmatching_test_conflict)
+#         no_of_test_conflict_segs = len(nmt_conflict_file_list)
+# else:
+#         nmt_conflict_file_list = []
+#         no_of_test_conflict_segs = 0
 
 #reference vars
 # ref_features = []
@@ -88,6 +89,7 @@ else:
 # ref_dimensions = []
 # ref_segs = []
 # #-----------------------------------------------------------------------------------------------------------------------
+
 
 
 
@@ -105,13 +107,24 @@ segmentMatchReportWindow = None
 ref_img_thumb = 'Assets/src/ref_img_thumb.jpg'
 
 test_img_thumb = 'Assets/src/test_img_thumb.jpg'
+resizeVals = (200, 200)
 
 
-ref_image =ImageTk.PhotoImage(Image.open(ref_img_thumb))
-# ref_image = cv2.resize(ref_image, (400,300))
+def getRef():
+    
+    img = Image.open(ref_img_thumb).resize(resizeVals)
 
-test_image = ImageTk.PhotoImage(Image.open(test_img_thumb))
-# test_image = cv2.resize(test_image, (400,300))
+    return img
+
+def getTest():
+
+    img = Image.open(test_img_thumb).resize(resizeVals)
+
+    return img
+
+ref_image =ImageTk.PhotoImage(getRef())
+
+test_image = ImageTk.PhotoImage(getTest())
 
 
 
@@ -122,7 +135,7 @@ def ImageBrowser_ref():
     imageLabel_ref.config(text=filename)
     if(filename != ''):
         img = Image.open(filename)
-        img = img.resize((400,400),Image.ANTIALIAS)
+        img = img.resize(resizeVals,Image.ANTIALIAS)
         ref_image = ImageTk.PhotoImage(img )
         ref_img_label.config(image = ref_image)
     else:
@@ -135,7 +148,7 @@ def ImageBrowser_test():
     imageLabel_test.config(text=filename)
     if (filename != ''):
         img = Image.open(filename)
-        img = img.resize((400, 400), Image.ANTIALIAS)
+        img = img.resize(resizeVals, Image.ANTIALIAS)
         test_image = ImageTk.PhotoImage(img)
         test_img_label.config(image=test_image)
     else:
@@ -264,47 +277,91 @@ def showSegmentMatchReport(segments):
     label_2_2Txt.grid(row=1, column=2)
 
 def removeBackground_ref():
-    image_path = imageLabel_ref.cget("text")
-    print(image_path)
-    print('removing background ref')
+    global ref_image
+    global ref_img_label
+
+    image_ref_path = imageLabel_ref.cget("text")
+    image_test_path = ""
+
+    if (image_ref_path == ''):
+        messagebox.showerror("Invalid path", "Invalid reference image path. Please make a valid selection!")
+        return
+
+    output_path = br.BRModule().run(image_ref_path,image_test_path,"","ref")
+
+    imageLabel_ref.config(text=output_path)
+    if(output_path != ''):
+        img = Image.open(output_path)
+        img = img.resize(resizeVals,Image.ANTIALIAS)
+        ref_image = ImageTk.PhotoImage(img )
+        ref_img_label.config(image = ref_image)
+        messagebox.showinfo("Background remove Success", "Successfully remove the background of reference image!")
+
 
 def removeBackground_test():
-    image_path = imageLabel_test.cget("text")
-    print(image_path)
-    print('removing background test')
+    global test_image
+    global test_img_label
+
+    image_ref_path = imageLabel_ref.cget("text")
+    image_test_path = imageLabel_test.cget("text")
+
+    image_ref_name = br.BRModule().splitFileNames(image_ref_path)
+    image_test_name = br.BRModule().splitFileNames(image_test_path)
+    image_ref_nameExeptExt = os.path.splitext(image_ref_name)[0]
+
+    if (image_test_path == ''):
+        messagebox.showerror("Invalid path", "Invalid test image path. Please make a valid selection!")
+        return
+
+    if (image_ref_path == ''):
+        messagebox.showerror("Invalid path", "Invalid reference image path. Please make a valid selection!")
+        return
+
+    if not (image_ref_nameExeptExt in image_test_name):
+        messagebox.showerror("Invalid Selection", "Please select a relavant reference image!")
+        return
+
+    output_path = br.BRModule().run(image_ref_path,image_test_path,"","test")
+
+    if (output_path != ''):
+        img = Image.open(output_path)
+        img = img.resize(resizeVals, Image.ANTIALIAS)
+        test_image = ImageTk.PhotoImage(img)
+        test_img_label.config(image=test_image)
+        messagebox.showinfo("Background remove Success", "Successfully remove the background of test image!")
 
 #QA Module UI
 
-def detectRefFeatures():
-    # qa.check_artwork_position(ref_artwork_loc, ref_or_cloth_loc, test_artwork_mask_loc, test_or_cloth_loc, ref_or_cloth_loc, test_or_cloth_loc)
+# def detectRefFeatures():
+#     # qa.check_artwork_position(ref_artwork_loc, ref_or_cloth_loc, test_artwork_mask_loc, test_or_cloth_loc, ref_or_cloth_loc, test_or_cloth_loc)
 
-    global ref_features
-    global ref_thresholded_segs
-    global ref_dimensions
-    global ref_segs
-    ref_features, ref_thresholded_segs, ref_dimensions, ref_segs = qa.detect_features(no_of_matching_ref_segs, 1, matching_ref_loc, matching_test_loc, ref_or_cloth_loc)
-    messagebox.showinfo("Extraction success", "Reference image features extracted successfully!")
+#     global ref_features
+#     global ref_thresholded_segs
+#     global ref_dimensions
+#     global ref_segs
+#     ref_features, ref_thresholded_segs, ref_dimensions, ref_segs = qa.detect_features(no_of_matching_ref_segs, 1, matching_ref_loc, matching_test_loc, ref_or_cloth_loc)
+#     messagebox.showinfo("Extraction success", "Reference image features extracted successfully!")
 
 
 
-def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs):
-    qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
-                      no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
-                   ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
-                      nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc)
+# def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs):
+#     qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
+#                       no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
+#                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
+#                       nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc)
 
-    shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
-        no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
-        no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc)
+#     shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
+#         no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
+#         no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc)
 
-    qa.display_arr(shape_def, "Shape")
-    qa.display_arr(size_def, "Size")
-    qa.display_arr(placement_def, "Placement")
-    qa.display_arr(rotation_def, "Rotation")
-    qa.display_arr(color_def, "Color")
-    qa.display_arr(minmax_def, "Minima Maxima")
+#     qa.display_arr(shape_def, "Shape")
+#     qa.display_arr(size_def, "Size")
+#     qa.display_arr(placement_def, "Placement")
+#     qa.display_arr(rotation_def, "Rotation")
+#     qa.display_arr(color_def, "Color")
+#     qa.display_arr(minmax_def, "Minima Maxima")
 
-    messagebox.showinfo("Comparison Success!", "Comparison complete")
+#     messagebox.showinfo("Comparison Success!", "Comparison complete")
 
 
 ##### ref image UI
@@ -433,15 +490,15 @@ frame5.pack(pady = 5)
 browse_defect_features_button = ttk.Button(frame5, text="Match Segments", command=lambda: matchSegments())
 browse_defect_features_button.grid(row=0, column=1)
 
-frame6 = ttk.Frame(root)
-frame6.pack(pady=5)
+# frame6 = ttk.Frame(root)
+# frame6.pack(pady=5)
 
-detect_ref_features_button = ttk.Button(frame6, text="Detect Reference Features",
-                                        command=lambda: detectRefFeatures())
-detect_ref_features_button.grid(row=0, column=0, padx = 150)
+# detect_ref_features_button = ttk.Button(frame6, text="Detect Reference Features",
+#                                         command=lambda: detectRefFeatures())
+# detect_ref_features_button.grid(row=0, column=0, padx = 150)
 
 
-detectAndCompare_button = ttk.Button(frame6, text="Detect and Compare Features", command=lambda: detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs))
-detectAndCompare_button.grid(row=0, column=1, padx = 150)
+# detectAndCompare_button = ttk.Button(frame6, text="Detect and Compare Features", command=lambda: detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs))
+# detectAndCompare_button.grid(row=0, column=1, padx = 150)
 
 root.mainloop()
