@@ -316,72 +316,76 @@ class BRModule():
         return fileName
 
 
-    def generateteTexturedArtworkDarft(self,samplefolder,folder,saveFolder):
+    def generateteTexturedArtworkDarft(self,sampleFilePath,filePath,saveFolder):
 
         blockSizeRows = 5
         blockSizeColumns = 5
         
-        for sampleFilename in os.listdir(samplefolder):
+        sampleFilename = self.splitFileNames(sampleFilePath)
 
-            editedSampleFileName = samplefolder +'/'+ sampleFilename
+        editedSampleFileName = sampleFilePath
 
-            sampleImage = cv.imread(editedSampleFileName)
-            sampleImageHSV = cv.cvtColor(sampleImage, cv.COLOR_BGR2HSV)
-            sampleImageHIST = cv.calcHist([sampleImageHSV], [0,1], None, [180,256], [0,180,0,256])
-            cv.normalize(sampleImageHIST, sampleImageHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
+        sampleImage = cv.imread(editedSampleFileName)
+        sampleImageHSV = cv.cvtColor(sampleImage, cv.COLOR_BGR2HSV)
+        sampleImageHIST = cv.calcHist([sampleImageHSV], [0,1], None, [180,256], [0,180,0,256])
+        cv.normalize(sampleImageHIST, sampleImageHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
 
-            for filename in os.listdir(folder):
+        filename = self.splitFileNames(filePath)
 
-                sampleFilenameExeptExt = os.path.splitext(sampleFilename)[0]
+        sampleFilenameExeptExt = os.path.splitext(sampleFilename)[0]
 
-                if sampleFilenameExeptExt in filename and '_tex_' in filename:
+        if sampleFilenameExeptExt in filename and '_tex_' in filename:
 
-                    editedFileName = folder +'/'+ filename
+            editedFileName = filePath
 
-                    imageToBackRmv = cv.imread(editedFileName)
-                    imageToBackRmv = cv.cvtColor(imageToBackRmv, cv.COLOR_BGR2HSV)
+            imageToBackRmv = cv.imread(editedFileName)
+            imageToBackRmv = cv.cvtColor(imageToBackRmv, cv.COLOR_BGR2HSV)
 
-                    outputImage = Image.open(r""+editedFileName)
-                    outputImageArr = np.array(outputImage)
+            outputImage = Image.open(r""+editedFileName)
+            outputImageArr = np.array(outputImage)
 
-                    for row in range(0,imageToBackRmv.shape[0]- blockSizeRows,blockSizeRows):
+            for row in range(0,imageToBackRmv.shape[0]- blockSizeRows,blockSizeRows):
 
-                        for column in range(0,imageToBackRmv.shape[1]- blockSizeColumns,blockSizeColumns):
+                for column in range(0,imageToBackRmv.shape[1]- blockSizeColumns,blockSizeColumns):
 
-                            imageBlock = imageToBackRmv[row:row+blockSizeRows,column:column+blockSizeColumns]
-                            imageBlockHIST = cv.calcHist([imageBlock], [0,1], None, [180,256], [0,180,0,256])
-                            cv.normalize(imageBlockHIST, imageBlockHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
+                    imageBlock = imageToBackRmv[row:row+blockSizeRows,column:column+blockSizeColumns]
+                    imageBlockHIST = cv.calcHist([imageBlock], [0,1], None, [180,256], [0,180,0,256])
+                    cv.normalize(imageBlockHIST, imageBlockHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
 
-                            value = cv.compareHist(sampleImageHIST, imageBlockHIST, cv.HISTCMP_CORREL)
+                    value = cv.compareHist(sampleImageHIST, imageBlockHIST, cv.HISTCMP_CORREL)
 
-                            if value > 0 :
-                                outputImageArr[row:row+blockSizeRows,column:column+blockSizeColumns] = (0, 0, 0)
+                    if value > 0 :
+                        outputImageArr[row:row+blockSizeRows,column:column+blockSizeColumns] = (0, 0, 0)
 
-                    outputImage = Image.fromarray(outputImageArr)
-                    outputImage.save(saveFolder+"/"+filename)
+            outputImage = Image.fromarray(outputImageArr)
+            outputImage.save(saveFolder+"/"+filename)
+
+            return saveFolder+"/"+filename
+        
+        return ""
 
 
 
-    def sharpTexturedArtworkDraft(self,folder):
+    def sharpTexturedArtworkDraft(self,filePath):
 
-        for filename in os.listdir(folder):
+        filename = self.splitFileNames(filePath)
 
-            editedFileName = folder +'/'+ filename
+        editedFileName = filePath
             
-            image = cv.imread(editedFileName)
+        image = cv.imread(editedFileName)
 
-            kernel = cv.getStructuringElement(cv.MORPH_RECT, (3,3))
-            erode = cv.erode(image, kernel, iterations=1)
+        kernel = cv.getStructuringElement(cv.MORPH_RECT, (3,3))
+        erode = cv.erode(image, kernel, iterations=1)
 
 
-            kernel = cv.getStructuringElement(cv.MORPH_RECT, (3,3))
-            opening = cv.morphologyEx(erode, cv.MORPH_OPEN, kernel)
+        kernel = cv.getStructuringElement(cv.MORPH_RECT, (3,3))
+        opening = cv.morphologyEx(erode, cv.MORPH_OPEN, kernel)
 
-            cv.imwrite(editedFileName, opening)
+        cv.imwrite(editedFileName, opening)
 
-            image = Image.open(editedFileName)
-            image = image.filter(ImageFilter.MedianFilter(size=13))
-            image.save(editedFileName)
+        image = Image.open(editedFileName)
+        image = image.filter(ImageFilter.MedianFilter(size=13))
+        image.save(editedFileName)
 
 
 
@@ -425,16 +429,6 @@ class BRModule():
         outputPath = absPath.replace('\\', '/')
 
         return outputPath
-        
-        # fileName = outerRemovedOutPath.split('/')[-1]
-        # outputPath = ""
-        # if type == "ref":
-        #     outputPath = os.getcwd()+"Assets/BR_Module/Output/artworks_ref"+fileName
-
-        # if type == "test":
-        #     outputPath = os.getcwd()+"Assets/BR_Module/Output/artworks_test"+fileName
-
-        # return outputPath
 
 
 
@@ -549,9 +543,10 @@ class BRModule():
 
             self.generateUniformFabricEdge(refOuterRemovedFilePath,edgeReferenceImages)
 
-            # self.generateteTexturedArtworkDarft(texSamplesPath,refOutputFilePath,artworksDraftsRef)
+            artworkDraftPath = self.generateteTexturedArtworkDarft(texSamplesPath,refOuterRemovedFilePath,artworksDraftsRef)
 
-            # self.sharpTexturedArtworkDraft(artworksDraftsRef)
+            if artworkDraftPath != "":
+                self.sharpTexturedArtworkDraft(artworkDraftPath)
 
             refOuterRemovedFilePath = self.isolateFabArtwork(refOuterRemovedFilePath,'ref',artworksReferenceImages)
 
@@ -566,9 +561,10 @@ class BRModule():
 
             self.generateUniformFabricEdge(testOuterRemovedFilePath,edgeTestImages)
 
-            # self.generateteTexturedArtworkDarft(texSamples,registratedTestImages,artworksDraftsTest)
+            artworkDraftPath = self.generateteTexturedArtworkDarft(texSamplesPath,testOuterRemovedFilePath,artworksDraftsTest)
 
-            # self.sharpTexturedArtworkDraft(artworksDraftsTest)
+            if artworkDraftPath != "":
+                self.sharpTexturedArtworkDraft(artworkDraftPath)
 
             testOuterRemovedFilePath = self.isolateFabArtwork(testOuterRemovedFilePath,'test',artworksTestImages)
 

@@ -107,6 +107,9 @@ segmentMatchReportWindow = None
 ref_img_thumb = 'Assets/src/ref_img_thumb.jpg'
 
 test_img_thumb = 'Assets/src/test_img_thumb.jpg'
+
+tex_sample_img_thumb = 'Assets/src/textured_sample_thumb.jpg'
+
 resizeVals = (200, 200)
 
 
@@ -122,9 +125,17 @@ def getTest():
 
     return img
 
+def getTexSample():
+
+    img = Image.open(tex_sample_img_thumb).resize(resizeVals)
+
+    return img
+
 ref_image =ImageTk.PhotoImage(getRef())
 
 test_image = ImageTk.PhotoImage(getTest())
+
+tex_sample_image = ImageTk.PhotoImage(getTexSample())
 
 
 
@@ -139,7 +150,7 @@ def ImageBrowser_ref():
         ref_image = ImageTk.PhotoImage(img )
         ref_img_label.config(image = ref_image)
     else:
-        ref_image = ImageTk.PhotoImage(Image.open(ref_img_thumb))
+        ref_image = ImageTk.PhotoImage(getRef())
         ref_img_label.config(image=ref_image)
 
 def ImageBrowser_test():
@@ -152,8 +163,21 @@ def ImageBrowser_test():
         test_image = ImageTk.PhotoImage(img)
         test_img_label.config(image=test_image)
     else:
-        test_image = ImageTk.PhotoImage(Image.open(test_img_thumb))
+        test_image = ImageTk.PhotoImage(getTest())
         test_img_label.config(image=test_image)
+
+def ImageBrowser_TexSample():
+    global tex_sample_image
+    filename = filedialog.askopenfilename(title="Select Refference File",filetypes=[("jpg files", "*.jpg"), ("jpeg files", "*,jpeg"),("png files", "*.png"), ("all files", "*.*")])
+    imageLabel_TexSample.config(text=filename)
+    if (filename != ''):
+        img = Image.open(filename)
+        img = img.resize(resizeVals, Image.ANTIALIAS)
+        tex_sample_image = ImageTk.PhotoImage(img)
+        tex_sample_img_label.config(image=tex_sample_image)
+    else:
+        tex_sample_image = ImageTk.PhotoImage(getTexSample())
+        tex_sample_img_label.config(image=tex_sample_image)
 
 def segmentImage_ref():
 
@@ -279,15 +303,29 @@ def showSegmentMatchReport(segments):
 def removeBackground_ref():
     global ref_image
     global ref_img_label
+    global imageLabel_TexSample
 
     image_ref_path = imageLabel_ref.cget("text")
     image_test_path = ""
+    image_tex_sample_path = imageLabel_TexSample.cget("text")
+
+    image_ref_name = br.BRModule().splitFileNames(image_ref_path)
+    image_tex_sample_name = br.BRModule().splitFileNames(image_tex_sample_path)
+    image_tex_sample_nameExeptExt = os.path.splitext(image_tex_sample_name)[0]
 
     if (image_ref_path == ''):
         messagebox.showerror("Invalid path", "Invalid reference image path. Please make a valid selection!")
         return
 
-    output_path = br.BRModule().run(image_ref_path,image_test_path,"","ref")
+    if '_tex_' in image_ref_name and image_tex_sample_path == '':
+        messagebox.showerror("Invalid path", "Invalid textured sample image path. Please make a valid selection!")
+        return
+
+    if '_tex_' in image_ref_name and image_tex_sample_path != '' and not image_tex_sample_nameExeptExt in image_ref_name:
+        messagebox.showerror("Invalid Selection", "Please select a relavant textured sample image!")
+        return
+
+    output_path = br.BRModule().run(image_ref_path,image_test_path,image_tex_sample_path,"ref")
 
     imageLabel_ref.config(text=output_path)
     if(output_path != ''):
@@ -301,13 +339,17 @@ def removeBackground_ref():
 def removeBackground_test():
     global test_image
     global test_img_label
+    global imageLabel_TexSample
 
     image_ref_path = imageLabel_ref.cget("text")
     image_test_path = imageLabel_test.cget("text")
+    image_tex_sample_path = imageLabel_TexSample.cget("text")
 
     image_ref_name = br.BRModule().splitFileNames(image_ref_path)
     image_test_name = br.BRModule().splitFileNames(image_test_path)
     image_ref_nameExeptExt = os.path.splitext(image_ref_name)[0]
+    image_tex_sample_name = br.BRModule().splitFileNames(image_tex_sample_path)
+    image_tex_sample_nameExeptExt = os.path.splitext(image_tex_sample_name)[0]
 
     if (image_test_path == ''):
         messagebox.showerror("Invalid path", "Invalid test image path. Please make a valid selection!")
@@ -321,7 +363,15 @@ def removeBackground_test():
         messagebox.showerror("Invalid Selection", "Please select a relavant reference image!")
         return
 
-    output_path = br.BRModule().run(image_ref_path,image_test_path,"","test")
+    if '_tex_' in image_test_name and image_tex_sample_path == '':
+        messagebox.showerror("Invalid path", "Invalid textured sample image path. Please make a valid selection!")
+        return
+
+    if '_tex_' in image_test_name and image_tex_sample_path != '' and not image_tex_sample_nameExeptExt in image_test_name:
+        messagebox.showerror("Invalid Selection", "Please select a relavant textured sample image!")
+        return
+
+    output_path = br.BRModule().run(image_ref_path,image_test_path,image_tex_sample_path,"test")
 
     if (output_path != ''):
         img = Image.open(output_path)
@@ -377,7 +427,7 @@ frame1.grid(row=1, column=0)
 imageLabelTxt = ttk.Label(frame1, text='Select Image:  ')
 imageLabelTxt.grid(row=0, column=0)
 
-label_frame_1 = tk.Frame(frame1, width=400, height=20, bg="white")
+label_frame_1 = tk.Frame(frame1, width=200, height=20, bg="white")
 label_frame_1.pack_propagate(0)  # Stops child widgets of label_frame from resizing it
 
 imageLabel_ref = ttk.Label(label_frame_1, background='white', text='')
@@ -404,14 +454,14 @@ segment_ref_image_button = ttk.Button(frame1_2, text="Segment Image", command=se
 segment_ref_image_button.pack (pady = 5)
 
 
-frame_seperator = ttk.Frame(frame_0, width=50)
+frame_seperator = ttk.Frame(frame_0, width=30)
 frame_seperator.grid(row=0, column=1)
 
 
-##### test image UI
+##### textured sample UI
 
-test_topic_label = ttk.Label(frame_0, text = 'Test Image',font=("Calibrir", 12, 'bold') )
-test_topic_label.grid(row=0, column=2, )
+text_sample_topic_label = ttk.Label(frame_0, text = 'Textured Sample(Only Textured)',font=("Calibrir", 12, 'bold') )
+text_sample_topic_label.grid(row=0, column=2, )
 
 frame2 = ttk.Frame(frame_0)
 frame2.grid(row=1, column=2)
@@ -419,75 +469,108 @@ frame2.grid(row=1, column=2)
 imageLabelTxt = ttk.Label(frame2, text='Select Image:  ')
 imageLabelTxt.grid(row=0, column=0)
 
-label_frame_2 = tk.Frame(frame2, width=400, height=20, bg="white")
+label_frame_2 = tk.Frame(frame2, width=200, height=20, bg="white")
 label_frame_2.pack_propagate(0)  # Stops child widgets of label_frame from resizing it
 
-imageLabel_test = ttk.Label(label_frame_2, background='white', text='')
-imageLabel_test.pack(side='left')
+imageLabel_TexSample = ttk.Label(label_frame_2, background='white', text='')
+imageLabel_TexSample.pack(side='left')
 label_frame_2.grid(row=0, column=1)
 
-browse_image_button = ttk.Button(frame2, text="Browse", command=ImageBrowser_test)
+browse_image_button = ttk.Button(frame2, text="Browse", command=ImageBrowser_TexSample)
+browse_image_button.grid(row=0, column=2)
+
+tex_sample_img_label = ttk.Label(frame2, background='white' ,image = tex_sample_image)
+tex_sample_img_label.grid(row=2, column=1)
+
+frame_seperator = ttk.Frame(frame2, height =70)
+frame_seperator.grid(row=3, column=1)
+
+frame_seperator = ttk.Frame(frame_0, width=30)
+frame_seperator.grid(row=0, column=3)
+
+
+
+##### test image UI
+
+test_topic_label = ttk.Label(frame_0, text = 'Test Image',font=("Calibrir", 12, 'bold') )
+test_topic_label.grid(row=0, column=4, )
+
+frame3 = ttk.Frame(frame_0)
+frame3.grid(row=1, column=4)
+
+imageLabelTxt = ttk.Label(frame3, text='Select Image:  ')
+imageLabelTxt.grid(row=0, column=0)
+
+label_frame_3 = tk.Frame(frame3, width=200, height=20, bg="white")
+label_frame_3.pack_propagate(0)  # Stops child widgets of label_frame from resizing it
+
+imageLabel_test = ttk.Label(label_frame_3, background='white', text='')
+imageLabel_test.pack(side='left')
+label_frame_3.grid(row=0, column=1)
+
+browse_image_button = ttk.Button(frame3, text="Browse", command=ImageBrowser_test)
 browse_image_button.grid(row=0, column=2)
 
 
-test_img_label = ttk.Label(frame2, background='white' ,image = test_image)
+test_img_label = ttk.Label(frame3, background='white' ,image = test_image)
 test_img_label.grid(row=2, column=1)
 
-frame2_1 = ttk.Frame(frame2)
-frame2_1.grid(row=3, column=1)
+frame3_1 = ttk.Frame(frame3)
+frame3_1.grid(row=3, column=1)
 
-test_back_rmv_button = ttk.Button(frame2_1, text="Remove Background", command=removeBackground_test)
+test_back_rmv_button = ttk.Button(frame3_1, text="Remove Background", command=removeBackground_test)
 test_back_rmv_button.pack (pady = 5)
 
-frame2_2 = ttk.Frame(frame2)
-frame2_2.grid(row=4, column=1)
+frame3_2 = ttk.Frame(frame3)
+frame3_2.grid(row=4, column=1)
 
-segment_test_image_button = ttk.Button(frame2_2, text="Segment Image", command=segmentImage_test)
+segment_test_image_button = ttk.Button(frame3_2, text="Segment Image", command=segmentImage_test)
 segment_test_image_button.pack (pady = 5)
+
 
 
 
 
 ##### refference segments UI
 
-frame3 = ttk.Frame(root)
-frame3.pack(pady = 5)
-
-referenceFeaturesTxt = ttk.Label(frame3, text='Reference Features: ')
-referenceFeaturesTxt.grid(row=0, column=0)
-
-label_frame_3 = tk.Frame(frame3, width=400, height=20, bg="white")
-label_frame_3.pack_propagate(0)  # Stops child widgets of label_frame from resizing it
-
-referenceFeaturesLabel = ttk.Label(label_frame_3, background='white', text='')
-referenceFeaturesLabel.pack(side='left')
-label_frame_3.grid(row=0, column=1)
-
-browse_reference_features_button = ttk.Button(frame3, text="Browse", command=lambda: featuresBrowser('reference'))
-browse_reference_features_button.grid(row=0, column=2)
-
-##### defect segments UI
 frame4 = ttk.Frame(root)
 frame4.pack(pady = 5)
 
-defectFeaturesTxt = ttk.Label(frame4, text='Defect Features:      ')
-defectFeaturesTxt.grid(row=0, column=0)
+referenceFeaturesTxt = ttk.Label(frame4, text='Reference Features: ')
+referenceFeaturesTxt.grid(row=0, column=0)
 
 label_frame_4 = tk.Frame(frame4, width=400, height=20, bg="white")
 label_frame_4.pack_propagate(0)  # Stops child widgets of label_frame from resizing it
 
-defectFeaturesLabel = ttk.Label(label_frame_4, background='white', text='')
-defectFeaturesLabel.pack(side='left')
+referenceFeaturesLabel = ttk.Label(label_frame_4, background='white', text='')
+referenceFeaturesLabel.pack(side='left')
 label_frame_4.grid(row=0, column=1)
 
-browse_defect_features_button = ttk.Button(frame4, text="Browse", command=lambda: featuresBrowser('defect'))
-browse_defect_features_button.grid(row=0, column=2)
+browse_reference_features_button = ttk.Button(frame4, text="Browse", command=lambda: featuresBrowser('reference'))
+browse_reference_features_button.grid(row=0, column=2)
 
+##### defect segments UI
 frame5 = ttk.Frame(root)
 frame5.pack(pady = 5)
 
+defectFeaturesTxt = ttk.Label(frame5, text='Defect Features:      ')
+defectFeaturesTxt.grid(row=0, column=0)
 
-browse_defect_features_button = ttk.Button(frame5, text="Match Segments", command=lambda: matchSegments())
+label_frame_5 = tk.Frame(frame5, width=400, height=20, bg="white")
+label_frame_5.pack_propagate(0)  # Stops child widgets of label_frame from resizing it
+
+defectFeaturesLabel = ttk.Label(label_frame_5, background='white', text='')
+defectFeaturesLabel.pack(side='left')
+label_frame_5.grid(row=0, column=1)
+
+browse_defect_features_button = ttk.Button(frame5, text="Browse", command=lambda: featuresBrowser('defect'))
+browse_defect_features_button.grid(row=0, column=2)
+
+frame6 = ttk.Frame(root)
+frame6.pack(pady = 5)
+
+
+browse_defect_features_button = ttk.Button(frame6, text="Match Segments", command=lambda: matchSegments())
 browse_defect_features_button.grid(row=0, column=1)
 
 # frame6 = ttk.Frame(root)
