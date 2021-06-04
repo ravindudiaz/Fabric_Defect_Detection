@@ -308,12 +308,22 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         #To be displayed in ui
         common_def_image = cv2.imread(test_artwork_loc)  # Add the test segment location path here ----------------------------------------------------------------
 
-        shape_def_image = common_def_image
-        size_def_image = common_def_image
-        rotation_def_image = common_def_image
-        placement_def_image = common_def_image
-        color_def_image = common_def_image
-        minmax_def_image = common_def_image
+        shape_def_image = cv2.imread(test_artwork_loc)
+        size_def_image = cv2.imread(test_artwork_loc)
+        rotation_def_image = cv2.imread(test_artwork_loc)
+        placement_def_image = cv2.imread(test_artwork_loc)
+        color_def_image = cv2.imread(test_artwork_loc)
+        minmax_def_image = cv2.imread(test_artwork_loc)
+
+        def_dict = {
+                "shape": shape_def_image,
+                "size": size_def_image,
+                "rotation": rotation_def_image,
+                "placement": placement_def_image,
+                "boundary": minmax_def_image,
+                "color": color_def_image,
+                "common": common_def_image
+        }
 
 
         for i in range(no_of_matching_test_segs):
@@ -328,7 +338,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                 # Detect and Compare Shape
                 huMoments, moments, thresh_seg = detect_shape(gr_test_seg)
                 print("Hu7", huMoments[6])
-                if ref_features[i][0]*huMoments[6] < 0 and abs(ref_features[i][0]/huMoments[6] <= 1.05 and ref_features[i][0] >= 0.95):
+
+
+                if ref_features[i][0]*huMoments[6] < 0 and abs(ref_features[i][0]/huMoments[6]) <= 1.05 and abs(ref_features[i][0]/huMoments[6]) >= 0.95:
                         shape_defect = {
                                 "type": "Shape Error",
                                 "status": "Mirrored segment"
@@ -342,9 +354,12 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                         # -----------------displaying the defected segment in the test artwork
                         shape_def_image = mark_defect(shape_def_image, thresh_seg)
-                        shape_def_disp = cv2.resize(shape_def_image, (900, 1200))
+                        def_dict["shape"] = shape_def_image
+                        shape_def_disp = cv2.resize(shape_def_image, (750, 1000))
                         cv2.imshow("Shape Defect View", shape_def_disp )
                         cv2.waitKey(0)
+
+                        shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Shape/shape.jpg", shape_def_disp)
                         cv2.destroyAllWindows()
                         # ---------------------------------------------------------------------
                 else:
@@ -368,8 +383,11 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                 # -----------------displaying the defected segment in the test artwork
                                 shape_def_image = mark_defect(shape_def_image, thresh_seg)
-                                shape_def_disp = cv2.resize(shape_def_image, (900, 1200))
+                                def_dict["shape"] = shape_def_image
+                                shape_def_disp = cv2.resize(shape_def_image, (750, 1000))
                                 cv2.imshow("Shape Defect View", shape_def_disp)
+                                shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Shape/shape.jpg", shape_def_disp)
+
                                 cv2.waitKey(0)
                                 cv2.destroyAllWindows()
                                 # ---------------------------------------------------------------------
@@ -393,8 +411,13 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                         # -----------------displaying the defected segment in the test artwork
                                         size_def_image = mark_defect(size_def_image, thresh_seg)
-                                        size_def_disp = cv2.resize(size_def_image, (900, 1200))
+                                        def_dict["size"] = size_def_image
+                                        size_def_disp = cv2.resize(size_def_image, (750, 1000))
+
+                                        size_saved = cv2.imwrite("./Assets/QA_Module/Output/Size/size.jpg", size_def_disp)
+
                                         cv2.imshow("Size Defect View", size_def_disp)
+
                                         cv2.waitKey(0)
                                         cv2.destroyAllWindows()
                                         # ---------------------------------------------------------------------
@@ -404,8 +427,6 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                         rotation_deviation = abs(ref_features[i][5] - rotation_measure)/(1+ ref_features[i][5] + rotation_measure)
                                         print("Rotation Deviation : ", rotation_deviation)
                                         Tr = 0.34
-
-                                        # Tr = 100000
 
                                         if rotation_deviation >= Tr:
                                                 rotation_defect = {
@@ -419,8 +440,10 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 common_def_image = mark_defect(common_def_image, thresh_seg)
                                                 # -----------------displaying the defected segment in the test artwork
                                                 rotation_def_image = mark_defect(rotation_def_image, thresh_seg)
-                                                rotation_def_disp = cv2.resize(rotation_def_image, (900, 1200))
+                                                def_dict["rotation"] = rotation_def_image
+                                                rotation_def_disp = cv2.resize(rotation_def_image, (750, 1000))
                                                 cv2.imshow("Rotation Defect View", rotation_def_disp)
+                                                rotation_saved = cv2.imwrite("./Assets/QA_Module/Output/Rotation/rotation.jpg",rotation_def_disp)
                                                 cv2.waitKey(0)
                                                 cv2.destroyAllWindows()
                                                 # ---------------------------------------------------------------------
@@ -435,9 +458,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 testseg_placement_measures = detect_placement(moments,test_seg_center, test_img_or)
                                                 angle_deviation = ((ref_features[i][6][1]-testseg_placement_measures[1])**2)/ref_features[i][6][1]
                                                 distance_deviation = ((ref_features[i][6][0] - testseg_placement_measures[0])**2)/ref_features[i][6][0]
-                                                total_deviation = np.sqrt(angle_deviation + distance_deviation)
+                                                total_deviation = np.sqrt(abs(angle_deviation - distance_deviation))
                                                 print("Placement Deviation Measure : " ,total_deviation)
-                                                Tp = 0.5
+                                                Tp = 0.3
 
                                                 if total_deviation >= Tp:
                                                         placement_defect = {
@@ -452,7 +475,10 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                                         # -----------------displaying the defected segment in the test artwork
                                                         placement_def_image = mark_defect(placement_def_image, thresh_seg)
-                                                        placement_def_disp = cv2.resize(placement_def_image, (900, 1200))
+                                                        def_dict["placement"] = placement_def_image
+                                                        placement_def_disp = cv2.resize(placement_def_image, (750, 1000))
+
+                                                        placement_saved = cv2.imwrite("./Assets/QA_Module/Output/Placement/placement.jpg", placement_def_disp)
                                                         cv2.imshow("Placement Defect View", placement_def_disp)
                                                         cv2.waitKey(0)
                                                         cv2.destroyAllWindows()
@@ -474,8 +500,13 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 disp_img_minmax = test_seg
                                                                 cv2.drawContours(seg_thresh_gdiff, defected_contours,
                                                                                  -1, (0, 0, 255), 2)
-                                                                cv2.drawContours(disp_img_minmax, defected_contours, -1,
-                                                                                 (0, 255, 0), cv2.FILLED)
+                                                                # cv2.drawContours(disp_img_minmax, defected_contours, -1,
+                                                                #                  (0, 255, 0), cv2.FILLED)
+
+                                                                for ct in defected_contours:
+                                                                        xd, yd, wd, hd = cv2.boundingRect(ct)
+                                                                        cv2.rectangle(minmax_def_image, (xd+test_translate[2]-10 ,yd+test_translate[0]-10), (xd+wd+test_translate[2]+10,yd+hd+test_translate[0]+10), (0,0,255),3)
+
                                                                 print("Prepdiff shape ", prep_diff.shape)
                                                                 # cv2.imshow("prepdiff from dnm", prep_diff) -------------
                                                                 #
@@ -496,11 +527,14 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 new_pos = prep_diff_nz
 
                                                                 for px_pos in new_pos:
-                                                                        common_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
-                                                                        minmax_def_image[px_pos[0]][px_pos[1]] = [0,255,0]
+                                                                        common_def_image[px_pos[0]][px_pos[1]] = [0,0,255]
+                                                                        # minmax_def_image[px_pos[0]][px_pos[1]] = [0,0,255]
 
-                                                                minmax_def_disp = cv2.resize(minmax_def_image, (900,1200))
+                                                                def_dict["boundary"] = minmax_def_image
 
+                                                                minmax_def_disp = cv2.resize(minmax_def_image, (750,1000))
+
+                                                                boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",minmax_def_disp)
                                                                 cv2.imshow("Minmax Defect View", minmax_def_disp)
                                                                 cv2.waitKey(0)
                                                                 cv2.destroyAllWindows()
@@ -548,23 +582,39 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                         no_def_segs += 1
                                                                         color_def.append([i, test_seg])
                                                                         shape_defect_json = json.dumps(color_defect)
-                                                                        color_def_image = mark_defect(test_seg, thresh_seg)
+                                                                        color_def_image = mark_defect(color_def_image, thresh_seg)
                                                                         common_def_image = mark_defect(common_def_image, thresh_seg)
                                                                         print(color_defect)
 
                                                                         #------------------------------------------
                                                                         color_def_image = mark_defect(color_def_image, thresh_seg)
-                                                                        color_def_disp = cv2.resize(color_def_image,(900,1200))
+
+                                                                        def_dict["color"] = color_def_image
+                                                                        color_def_disp = cv2.resize(color_def_image,(750,1000))
+
+                                                                        color_saved = cv2.imwrite("./Assets/QA_Module/Output/Color/color.jpg", color_def_disp)
                                                                         cv2.imshow("Color Defect View", color_def_disp)
                                                                         cv2.waitKey(0)
                                                                         cv2.destroyAllWindows()
                                                                         #------------------------------------------
 
         print("Number of defected segemnts : ",no_def_segs)
-        # cv2.name
-        common_def_image = cv2.resize(common_def_image, (1008,1344))
-        cv2.imshow("Common image ", common_def_image)
+
+        def_dict["common"] = color_def_image
+        common_def_disp = cv2.resize(common_def_image, (1008,1344))
+        cv2.imshow("Common image ", common_def_disp)
         cv2.waitKey(0)
+
+        shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Size/shape.jpg", cv2.resize(def_dict["shape"],(750,1000)))
+        size_saved = cv2.imwrite("./Assets/QA_Module/Output/Size/size.jpg", cv2.resize(def_dict["size"],(750,1000)))
+        rotation_saved = cv2.imwrite("./Assets/QA_Module/Output/Rotation/rotation.jpg",cv2.resize(def_dict["rotation"],(750,1000)))
+        placement_saved = cv2.imwrite("./Assets/QA_Module/Output/Placement/placement.jpg",cv2.resize(def_dict["placement"],(750,1000)))
+        boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",cv2.resize(def_dict["boundary"],(750,1000)))
+        color_saved = cv2.imwrite("./Assets/QA_Module/Output/Color/color.jpg",cv2.resize(def_dict["color"],(750,1000)))
+        common_saved = cv2.imwrite("./Assets/QA_Module/Output/Common/common.jpg",cv2.resize(def_dict["common"],(750,1000)))
+
+
+
         return shape_def, size_def, placement_def, rotation_def, color_def, minmax_def
 
 #MinMax2
@@ -706,8 +756,8 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
 def resize_segments(thr_seg, ref_dimensions):
         nz_locs = np.argwhere(thr_seg)
         thr_disp = cv2.resize(thr_seg, (900,1200))
-        cv2.imshow("thresh seg to check test translate", thr_disp)
-        cv2.waitKey(0)
+        # cv2.imshow("thresh seg to check test translate", thr_disp)---
+        # cv2.waitKey(0)
         # print(nz_locs)
         x_arr = []
         y_arr = []
@@ -806,10 +856,10 @@ def detect_rotation(moments):
 #Placement Detection
 def detect_placement(moments, garment_center, outer_removed_seg):
         print("Placement Detection...")
-        xg = garment_center[0]
-        yg = garment_center[1]
+        # xg = garment_center[0]
+        # yg = garment_center[1]
 
-        # # Finding the garment's center
+        # Finding the garment's center
         # nz_pos = np.argwhere(outer_removed_seg)
         # x = []
         # y = []
@@ -821,6 +871,56 @@ def detect_placement(moments, garment_center, outer_removed_seg):
         #
         # xg = (x[0] + x[len(x)-1])/2
         # yg = (y[0] + y[len(y)-1])/2
+
+        or_gr = cv2.cvtColor(outer_removed_seg, cv2.COLOR_BGR2GRAY)
+        ret_or, thresh_or_seg = cv2.threshold(or_gr, 20, 255, cv2.THRESH_BINARY)
+
+        # cv2.imshow("thresh_or", thresh_or_seg)
+        # cv2.waitKey(0)
+
+        #Find garment center 2
+        # ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+
+        # ctrs_len = []
+        ctrs_len = []
+        # for c in ctrs:
+        #         ctrs_len.append(len(c))
+        # print("Contours 1 length list :", ctrs_len)
+
+
+        # sample = outer_removed_seg
+
+        for k in ctrs:
+                ctrs_len.append(len(k))
+        print("Contours 2 length list:", ctrs_len)
+
+        ctrlen_sorted = sorted(ctrs_len)
+        max_len = ctrlen_sorted[len(ctrlen_sorted)-1]
+
+        max_idx = 0
+        for j in range(len(ctrs_len)):
+                if ctrs_len[j] == max_len:
+                        max_idx = j
+
+        max_ctr = ctrs[max_idx]
+        print("Cloth ctr length :", len(max_ctr))
+        x = []
+        y = []
+        for pt in max_ctr:
+                x.append(pt.flatten()[1])
+                y.append(pt.flatten()[0])
+        x = sorted(x)
+        y = sorted(y)
+
+        xg = (x[0] + x[len(x)-1])/2
+        yg = (y[0] + y[len(y)-1])/2
+        print("Garment Center :", xg," ",yg)
+
+        # cv2.drawContours(sample, ctrs2, len(ctrs2) - 1,(0,255,0), 3)
+        # sample = cv2.resize(sample, (750,1000 ))
+        # cv2.imshow("Contours ", sample)
+        # cv2.waitKey(0)
 
         #Segment Center of Mass
         xc = int(moments['m10']/moments['m00'])
