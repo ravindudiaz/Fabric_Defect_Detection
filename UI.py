@@ -14,11 +14,11 @@ import BR_Module_For_UI as br
 
 
 matching_ref_loc ="./Assets/Seg_Module/Output/defect/matching_segments/reference/"
-matching_test_loc = "./Assets/Seg_Module/Output/defect/matching_segments/test/"
+matching_test_loc = "./Assets/Seg_Module/Output/defect/matching_segments/defect/"
 nonmatching_ref_loc = "./Assets/Seg_Module/Output/defect/none_matching_segments/reference/"
-nonmatching_test_loc= "./Assets/Seg_Module/Output/defect/none_matching_segments/test/"
+nonmatching_test_loc= "./Assets/Seg_Module/Output/defect/none_matching_segments/defect/"
 nonmatching_ref_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments/reference/"
-nonmatching_test_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments/test/"
+nonmatching_test_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments/defect/"
 
 
 #ref artwork & cloth loc
