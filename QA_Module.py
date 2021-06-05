@@ -70,7 +70,8 @@ import json
 def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatching_ref_segs, no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict, nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc):
         # To be displayed in ui
-        common_def_image = cv2.imread(test_artwork_loc)  # Add the test segment location path here ----------------------------------------------------------------
+        test_artwork_list = os.listdir(test_artwork_loc)
+        common_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])  # Add the test segment location path here ----------------------------------------------------------------
         print("Conflict Segment Matching Started...........................................................")
         print(nm_test_loc)
         if no_of_nonmatching_ref_segs != 0 and no_of_test_conflict_segs == 0:
@@ -111,7 +112,9 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 defy_min = defy[0]
                                 defy_max = defy[len(defy) - 1]
                                 def_seg_section = def_seg[defy_min:defy_max, defx_min:defx_max]
-                                ref_image = cv2.imread(ref_artwork_loc)
+
+                                ref_artwork_list = os.listdir(ref_artwork_loc)
+                                ref_image = cv2.imread(ref_artwork_loc + ref_artwork_list[0])
                                 ref_dims = ref_image.shape
 
                                 #Image for the comparison with the ref artwork
@@ -268,7 +271,9 @@ def detect_features(no_of_matching_ref_segs, ref_img_check, matching_ref_loc, ma
                 yg = int(dimensions[0] / 2)
                 garment_center = [xg, yg]
 
-                outer_removed_img = cv2.imread(ref_or_cloth_loc)
+                ref_or_list = os.listdir(ref_or_cloth_loc)
+                outer_removed_img = cv2.imread(ref_or_cloth_loc + ref_or_list[0])
+
                 segment_placement_measures = detect_placement(moments, garment_center, outer_removed_img)
                 print(segment_placement_measures)
 
@@ -306,14 +311,16 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         minmax_def = []
 
         #To be displayed in ui
-        common_def_image = cv2.imread(test_artwork_loc)  # Add the test segment location path here ----------------------------------------------------------------
+        test_artwork_list = os.listdir(test_artwork_loc)
 
-        shape_def_image = cv2.imread(test_artwork_loc)
-        size_def_image = cv2.imread(test_artwork_loc)
-        rotation_def_image = cv2.imread(test_artwork_loc)
-        placement_def_image = cv2.imread(test_artwork_loc)
-        color_def_image = cv2.imread(test_artwork_loc)
-        minmax_def_image = cv2.imread(test_artwork_loc)
+        common_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])  # Add the test segment location path here ----------------------------------------------------------------
+
+        shape_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
+        size_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
+        rotation_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
+        placement_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
+        color_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
+        minmax_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
 
         def_dict = {
                 "shape": shape_def_image,
@@ -454,7 +461,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 xg = int(test_img_dimensions[1]/2)
                                                 yg = int(test_img_dimensions[0]/2)
                                                 test_seg_center = [xg, yg]
-                                                test_img_or = cv2.imread(test_or_cloth_loc)
+
+                                                test_or_list = os.listdir(test_or_cloth_loc)
+                                                test_img_or = cv2.imread(test_or_cloth_loc + test_or_list[0])
                                                 testseg_placement_measures = detect_placement(moments,test_seg_center, test_img_or)
                                                 angle_deviation = ((ref_features[i][6][1]-testseg_placement_measures[1])**2)/ref_features[i][6][1]
                                                 distance_deviation = ((ref_features[i][6][0] - testseg_placement_measures[0])**2)/ref_features[i][6][0]
@@ -605,13 +614,15 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         cv2.imshow("Common image ", common_def_disp)
         cv2.waitKey(0)
 
-        shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Size/shape.jpg", cv2.resize(def_dict["shape"],(750,1000)))
-        size_saved = cv2.imwrite("./Assets/QA_Module/Output/Size/size.jpg", cv2.resize(def_dict["size"],(750,1000)))
-        rotation_saved = cv2.imwrite("./Assets/QA_Module/Output/Rotation/rotation.jpg",cv2.resize(def_dict["rotation"],(750,1000)))
-        placement_saved = cv2.imwrite("./Assets/QA_Module/Output/Placement/placement.jpg",cv2.resize(def_dict["placement"],(750,1000)))
-        boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",cv2.resize(def_dict["boundary"],(750,1000)))
-        color_saved = cv2.imwrite("./Assets/QA_Module/Output/Color/color.jpg",cv2.resize(def_dict["color"],(750,1000)))
-        common_saved = cv2.imwrite("./Assets/QA_Module/Output/Common/common.jpg",cv2.resize(def_dict["common"],(750,1000)))
+        img_dims = common_def_image.shape
+
+        shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Shape/shape.jpg", cv2.resize(def_dict["shape"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+        size_saved = cv2.imwrite("./Assets/QA_Module/Output/Size/size.jpg", cv2.resize(def_dict["size"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+        rotation_saved = cv2.imwrite("./Assets/QA_Module/Output/Rotation/rotation.jpg",cv2.resize(def_dict["rotation"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+        placement_saved = cv2.imwrite("./Assets/QA_Module/Output/Placement/placement.jpg",cv2.resize(def_dict["placement"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+        boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",cv2.resize(def_dict["boundary"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+        color_saved = cv2.imwrite("./Assets/QA_Module/Output/Color/color.jpg",cv2.resize(def_dict["color"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+        common_saved = cv2.imwrite("./Assets/QA_Module/Output/Common/common.jpg",cv2.resize(def_dict["common"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
 
 
 

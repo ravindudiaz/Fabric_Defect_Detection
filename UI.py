@@ -13,27 +13,27 @@ import BR_Module_For_UI as br
 #location paths-----------------------------------------
 
 
-matching_ref_loc ="./Assets/Seg_Module/Output/uni_owl_blue/defect_5/matching_segments/reference/"
-matching_test_loc = "./Assets/Seg_Module/Output/uni_owl_blue/defect_5/matching_segments/defect/"
-nonmatching_ref_loc = "./Assets/Seg_Module/Output/uni_owl_blue/defect_5/none_matching_segments/reference/"
-nonmatching_test_loc="./Assets/Seg_Module/Output/uni_owl_blue/defect_5/none_matching_segments/defect/"
-nonmatching_ref_conflict = "./Assets/Seg_Module/Output/uni_owl_blue/defect_5/conflict/ref/"
-nonmatching_test_conflict = "./Assets/Seg_Module/Output/uni_owl_blue/defect_5/conflict/defect/"
+matching_ref_loc ="./Assets/Seg_Module/Output/defect/matching_segments/reference/"
+matching_test_loc = "./Assets/Seg_Module/Output/defect/matching_segments/test/"
+nonmatching_ref_loc = "./Assets/Seg_Module/Output/defect/none_matching_segments/reference/"
+nonmatching_test_loc= "./Assets/Seg_Module/Output/defect/none_matching_segments/test/"
+nonmatching_ref_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments/reference/"
+nonmatching_test_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments/test/"
 
 
 #ref artwork & cloth loc
 ref_artwork_mask_loc = "./Assets/BR_Module/Output/mask/ref/artwork/"
-ref_or_cloth_loc = "./Assets/BR_Module/Output/ref/outer_removed/owl_blue_or.JPG"  #outer removed ref
+ref_or_cloth_loc = "./Assets/BR_Module/Output/ref/outer_removed_ref/"  #outer removed ref
 
 #test artwork &cloth loc
 test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
-test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed/uni_owl_blue2_or.JPG"  #outer removed test
+test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed_test/"  #outer removed test
 
 #ref isolated artwork loc
-ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/owl_blue.JPG"
+ref_artwork_loc = "./Assets/BR_Module/Output/artworks_ref/"
 
 #test isolated artwork loc
-test_artwork_loc = "./Assets/BR_Module/Output/test/isolated_artwork/owl_blue_5.JPG"
+test_artwork_loc = "./Assets/BR_Module/Output/test/artworks_test/"
 
 
 #might need to be adjusted as per segment rois
@@ -475,7 +475,13 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     refimglist = os.listdir("./Assets/BR_Module/Output/ref/isolated_artwork/")
     print(refimglist)
     # if refimglist != []:
-    ref_artwork = Image.open("./Assets/BR_Module/Output/ref/isolated_artwork/" + refimglist[0])
+
+    ref_artwork_img = cv2.imread("./Assets/BR_Module/Output/ref/isolated_artwork/" + refimglist[0])
+    img_dims = ref_artwork_img.shape
+    ref_artwork_img_saved = cv2.imwrite("./Assets/QA_Module/Output/ref_artwork/ref.jpg",cv2.resize(ref_artwork_img[int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+
+    ref_artwork = Image.open("./Assets/QA_Module/Output/ref_artwork/ref.jpg")
+    ref_artwork = ref_artwork.resize((750,800),Image.ANTIALIAS)
     ref_img_comp = ImageTk.PhotoImage(ref_artwork)
     comp_ref_label = ttk.Label(second_frame, background = 'white', image = ref_img_comp)
     comp_ref_label.image = ref_img_comp
@@ -489,6 +495,17 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     comp_test_label = ttk.Label(second_frame, background='white', image=marked_img_comp)
     comp_test_label.image = marked_img_comp
     comp_test_label.grid(row=0, column=1)
+
+    # third_frame = ttk.Frame(second_frame)
+    # third_frame.pack(pady = 5)
+
+    r = tk.StringVar()
+
+    rb1 = tk.Radiobutton(second_frame, text="Shape", variable = r, value="shape").pack()
+    rb1.grid(row = 1, column = 0)
+    rb2 = tk.Radiobutton(second_frame, text="Size", variable=r, value="shape").ppack()
+    rb2.grid(row=1, column=1)
+
 
 
 
