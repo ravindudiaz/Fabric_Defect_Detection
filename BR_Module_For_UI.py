@@ -320,47 +320,50 @@ class BRModule():
 
         blockSizeRows = 5
         blockSizeColumns = 5
-        
-        sampleFilename = self.splitFileNames(sampleFilePath)
-
-        editedSampleFileName = sampleFilePath
-
-        sampleImage = cv.imread(editedSampleFileName)
-        sampleImageHSV = cv.cvtColor(sampleImage, cv.COLOR_BGR2HSV)
-        sampleImageHIST = cv.calcHist([sampleImageHSV], [0,1], None, [180,256], [0,180,0,256])
-        cv.normalize(sampleImageHIST, sampleImageHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
 
         filename = self.splitFileNames(filePath)
 
-        sampleFilenameExeptExt = os.path.splitext(sampleFilename)[0]
+        if '_tex_' in filename:
+            
+            sampleFilename = self.splitFileNames(sampleFilePath)
 
-        if sampleFilenameExeptExt in filename and '_tex_' in filename:
+            editedSampleFileName = sampleFilePath
 
-            editedFileName = filePath
+            sampleImage = cv.imread(editedSampleFileName)
+            sampleImageHSV = cv.cvtColor(sampleImage, cv.COLOR_BGR2HSV)
+            sampleImageHIST = cv.calcHist([sampleImageHSV], [0,1], None, [180,256], [0,180,0,256])
+            cv.normalize(sampleImageHIST, sampleImageHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
 
-            imageToBackRmv = cv.imread(editedFileName)
-            imageToBackRmv = cv.cvtColor(imageToBackRmv, cv.COLOR_BGR2HSV)
 
-            outputImage = Image.open(r""+editedFileName)
-            outputImageArr = np.array(outputImage)
+            sampleFilenameExeptExt = os.path.splitext(sampleFilename)[0]
 
-            for row in range(0,imageToBackRmv.shape[0]- blockSizeRows,blockSizeRows):
+            if sampleFilenameExeptExt in filename:
 
-                for column in range(0,imageToBackRmv.shape[1]- blockSizeColumns,blockSizeColumns):
+                editedFileName = filePath
 
-                    imageBlock = imageToBackRmv[row:row+blockSizeRows,column:column+blockSizeColumns]
-                    imageBlockHIST = cv.calcHist([imageBlock], [0,1], None, [180,256], [0,180,0,256])
-                    cv.normalize(imageBlockHIST, imageBlockHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
+                imageToBackRmv = cv.imread(editedFileName)
+                imageToBackRmv = cv.cvtColor(imageToBackRmv, cv.COLOR_BGR2HSV)
 
-                    value = cv.compareHist(sampleImageHIST, imageBlockHIST, cv.HISTCMP_CORREL)
+                outputImage = Image.open(r""+editedFileName)
+                outputImageArr = np.array(outputImage)
 
-                    if value > 0 :
-                        outputImageArr[row:row+blockSizeRows,column:column+blockSizeColumns] = (0, 0, 0)
+                for row in range(0,imageToBackRmv.shape[0]- blockSizeRows,blockSizeRows):
 
-            outputImage = Image.fromarray(outputImageArr)
-            outputImage.save(saveFolder+"/"+filename)
+                    for column in range(0,imageToBackRmv.shape[1]- blockSizeColumns,blockSizeColumns):
 
-            return saveFolder+"/"+filename
+                        imageBlock = imageToBackRmv[row:row+blockSizeRows,column:column+blockSizeColumns]
+                        imageBlockHIST = cv.calcHist([imageBlock], [0,1], None, [180,256], [0,180,0,256])
+                        cv.normalize(imageBlockHIST, imageBlockHIST, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
+
+                        value = cv.compareHist(sampleImageHIST, imageBlockHIST, cv.HISTCMP_CORREL)
+
+                        if value > 0 :
+                            outputImageArr[row:row+blockSizeRows,column:column+blockSizeColumns] = (0, 0, 0)
+
+                outputImage = Image.fromarray(outputImageArr)
+                outputImage.save(saveFolder+"/"+filename)
+
+                return saveFolder+"/"+filename
         
         return ""
 
@@ -429,6 +432,32 @@ class BRModule():
         outputPath = absPath.replace('\\', '/')
 
         return outputPath
+
+    def sharpUniformArtworkMask(self,artworkPath):
+
+        filename = self.splitFileNames(artworkPath)
+
+        if "uni_" in filename:
+            editedFileName = artworkPath
+            
+            image = cv.imread(editedFileName)
+
+            
+            mg = cv.medianBlur(image,9)
+
+            # kernel = cv.getStructuringElement(cv.MORPH_RECT, (3,3))
+            # erode = cv.erode(image, kernel, iterations=1)
+
+
+            # kernel = cv.getStructuringElement(cv.MORPH_RECT, (3,3))
+            # opening = cv.morphologyEx(erode, cv.MORPH_OPEN, kernel)
+
+            cv.imwrite(editedFileName, mg)
+
+            # image = Image.open(editedFileName)
+            # image = image.filter(ImageFilter.MedianFilter(size=3))
+            # image.save(editedFileName)
+
 
 
 
@@ -550,6 +579,8 @@ class BRModule():
 
             refOuterRemovedFilePath = self.isolateFabArtwork(refOuterRemovedFilePath,'ref',artworksReferenceImages)
 
+            # self.sharpUniformArtworkMask(refOuterRemovedFilePath)
+
             return self.generateOutputPath(refOuterRemovedFilePath,"ref")
 
         if type == "test":
@@ -567,5 +598,7 @@ class BRModule():
                 self.sharpTexturedArtworkDraft(artworkDraftPath)
 
             testOuterRemovedFilePath = self.isolateFabArtwork(testOuterRemovedFilePath,'test',artworksTestImages)
+
+            # self.sharpUniformArtworkMask(testOuterRemovedFilePath)
 
             return self.generateOutputPath(testOuterRemovedFilePath,"test")
