@@ -228,7 +228,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                         cv2.imwrite(matching_test_loc+"M_"+str(curr_files), tc_segs[best_match])
                         os.remove(nonmatching_test_conflict + "C_" + str(i) + str(x))
         print("Conflict Segment Matching Done...............................................")
-
+        return common_def_image
 
 
 
@@ -298,7 +298,7 @@ def detect_features(no_of_matching_ref_segs, ref_img_check, matching_ref_loc, ma
         print("Reference Features :",len(ref_features))
         return ref_features, thresholded_segments, dimensions, ref_segs
 
-def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions, ref_segs, no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc):
+def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions, ref_segs, no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc, common_def):
         print("Detect and Match test image stage reached...........................")
 
         no_def_segs = 0
@@ -314,6 +314,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         test_artwork_list = os.listdir(test_artwork_loc)
 
         common_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])  # Add the test segment location path here ----------------------------------------------------------------
+        common_def_image = common_def.copy()
 
         shape_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
         size_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
@@ -329,7 +330,8 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                 "placement": placement_def_image,
                 "boundary": minmax_def_image,
                 "color": color_def_image,
-                "common": common_def_image
+                "common": common_def_image,
+                "patch": common_def
         }
 
 
@@ -623,7 +625,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",cv2.resize(def_dict["boundary"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
         color_saved = cv2.imwrite("./Assets/QA_Module/Output/Color/color.jpg",cv2.resize(def_dict["color"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
         common_saved = cv2.imwrite("./Assets/QA_Module/Output/Common/common.jpg",cv2.resize(def_dict["common"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
-
+        patch_saved = cv2.imwrite("./Assets/QA_Module/Output/Patch/patch.jpg",cv2.resize(def_dict["patch"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
 
 
         return shape_def, size_def, placement_def, rotation_def, color_def, minmax_def
