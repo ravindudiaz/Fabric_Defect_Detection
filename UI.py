@@ -445,20 +445,9 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     newWindow.title("Defect Report")
     newWindow.geometry("1500x1200")
     #-----------------------------------------------------------------------
-    frame9 = ttk.Frame(newWindow) #main frame
+    global frame9
+    frame9 = ttk.Frame(newWindow)
     frame9.pack( fill=tk.BOTH,expand = 1)
-
-    my_canvas = tk.Canvas(frame9) #canvas
-    my_canvas.pack(side = tk.LEFT, fill=tk.BOTH, expand=1)
-
-    my_scroll_bar = ttk.Scrollbar(frame9, orient=tk.VERTICAL, command=my_canvas.yview())
-    my_scroll_bar.pack(side=tk.RIGHT, fill=tk.Y)
-
-    my_canvas.configure(yscrollcommand = my_scroll_bar.set)
-    my_canvas.bind('<Configure>', lambda e: my_canvas.configure(scrollregion = my_canvas.bbox("all")))
-
-    second_frame = ttk.Frame(my_canvas)
-    my_canvas.create_window((0,0), window=second_frame, anchor = "nw")
 
     #-----------------------------------------------------------------------
 
@@ -483,7 +472,7 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     ref_artwork = Image.open("./Assets/QA_Module/Output/ref_artwork/ref.jpg")
     ref_artwork = ref_artwork.resize((750,800),Image.ANTIALIAS)
     ref_img_comp = ImageTk.PhotoImage(ref_artwork)
-    comp_ref_label = ttk.Label(second_frame, background = 'white', image = ref_img_comp)
+    comp_ref_label = ttk.Label(frame9, background = 'white', image = ref_img_comp)
     comp_ref_label.image = ref_img_comp
     comp_ref_label.grid(row = 0, column = 0)
 
@@ -492,20 +481,37 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     # if testimglist != []:
     marked_artwork = Image.open("./Assets/QA_Module/Output/Rotation/" + testimglist[0])
     marked_img_comp = ImageTk.PhotoImage(marked_artwork)
-    comp_test_label = ttk.Label(second_frame, background='white', image=marked_img_comp)
+    comp_test_label = ttk.Label(frame9, background='white', image=marked_img_comp)
     comp_test_label.image = marked_img_comp
     comp_test_label.grid(row=0, column=1)
 
-    # third_frame = ttk.Frame(second_frame)
-    # third_frame.pack(pady = 5)
+    #Radio Buttons to show separate outputs
+    frame10 = ttk.Frame(newWindow)
+    frame10.pack(fill=tk.BOTH, expand=1, pady=20)
 
-    r = tk.StringVar()
+    var = tk.StringVar()
+    rb1 = tk.Radiobutton(frame10, text="Shape", variable= var, value="Shape", command=lambda  :displayDefImage(var.get()))
+    rb1.grid(row=0, column=0, padx=30)
+    rb2 = tk.Radiobutton(frame10, text="Size", variable=var, value="Size", command=lambda :displayDefImage(var.get()))
+    rb2.grid(row=0, column=1, padx=30)
+    rb3 = tk.Radiobutton(frame10, text="Rotation", variable=var, value="Rotation", command=lambda: displayDefImage(var.get()))
+    rb3.grid(row=0, column=2, padx=30)
+    rb4 = tk.Radiobutton(frame10, text="Placement", variable=var, value="Placement", command=lambda: displayDefImage(var.get()))
+    rb4.grid(row=0, column=3, padx=30)
+    rb5 = tk.Radiobutton(frame10, text="Boundary", variable=var, value="Boundary", command=lambda: displayDefImage(var.get()))
+    rb5.grid(row=0, column=4, padx=30)
+    rb6 = tk.Radiobutton(frame10, text="Color", variable=var, value="Color", command=lambda: displayDefImage(var.get()))
+    rb6.grid(row=0, column=5, padx=30)
+    rb7 = tk.Radiobutton(frame10, text="Common", variable=var, value="Common", command=lambda: displayDefImage(var.get()))
+    rb7.grid(row=0, column=6, padx=30)
 
-    rb1 = tk.Radiobutton(second_frame, text="Shape", variable = r, value="shape").pack()
-    rb1.grid(row = 1, column = 0)
-    rb2 = tk.Radiobutton(second_frame, text="Size", variable=r, value="shape").ppack()
-    rb2.grid(row=1, column=1)
 
+def displayDefImage(rb_value):
+    img = Image.open("./Assets/QA_Module/Output/"+rb_value+"/"+rb_value.lower()+".jpg")
+    img_photo = ImageTk.PhotoImage(img)
+    comp_test_label = ttk.Label(frame9, background='white', image=img_photo)
+    comp_test_label.image = img_photo
+    comp_test_label.grid(row=0, column=1)
 
 
 
