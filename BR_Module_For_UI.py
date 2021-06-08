@@ -549,19 +549,23 @@ class BRModule():
             import traceback
             traceback.print_exc()
 
-        # self.deleteGeneratedFiles(outerRemReferenceImages)
-        # self.deleteGeneratedFiles(outerRemTestImages)
-        # self.deleteGeneratedFiles(registratedTestImages)
-        # self.deleteGeneratedFiles(edgeReferenceImages)
-        # self.deleteGeneratedFiles(edgeTestImages)
-        # self.deleteGeneratedFiles(artworksDraftsRef)
-        # self.deleteGeneratedFiles(artworksDraftsTest)
-        # self.deleteGeneratedFiles(artworkMasksReferenceImages)
-        # self.deleteGeneratedFiles(artworkMasksTestImages)
-        # self.deleteGeneratedFiles(artworksReferenceImages)
-        # self.deleteGeneratedFiles(artworksTestImages)
-        # self.deleteGeneratedFiles(fabricMasksRef)
-        # self.deleteGeneratedFiles(fabricMasksTest)
+        if type == "ref":
+            self.deleteGeneratedFiles(outerRemReferenceImages)
+            self.deleteGeneratedFiles(edgeReferenceImages)
+            self.deleteGeneratedFiles(artworksDraftsRef)
+            self.deleteGeneratedFiles(artworkMasksReferenceImages)
+            self.deleteGeneratedFiles(artworksReferenceImages)
+            self.deleteGeneratedFiles(fabricMasksRef)
+
+
+        if type == "test":
+            self.deleteGeneratedFiles(outerRemTestImages)
+            self.deleteGeneratedFiles(registratedTestImages)
+            self.deleteGeneratedFiles(edgeTestImages)
+            self.deleteGeneratedFiles(artworksDraftsTest)
+            self.deleteGeneratedFiles(artworkMasksTestImages)
+            self.deleteGeneratedFiles(artworksTestImages)
+            self.deleteGeneratedFiles(fabricMasksTest)
 
         refOuterRemovedFilePath =""
         testOuterRemovedFilePath =""
