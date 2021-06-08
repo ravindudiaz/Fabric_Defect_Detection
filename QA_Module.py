@@ -228,7 +228,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                         cv2.imwrite(matching_test_loc+"M_"+str(curr_files), tc_segs[best_match])
                         os.remove(nonmatching_test_conflict + "C_" + str(i) + str(x))
         print("Conflict Segment Matching Done...............................................")
-
+        return common_def_image
 
 
 
@@ -298,7 +298,7 @@ def detect_features(no_of_matching_ref_segs, ref_img_check, matching_ref_loc, ma
         print("Reference Features :",len(ref_features))
         return ref_features, thresholded_segments, dimensions, ref_segs
 
-def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions, ref_segs, no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc):
+def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_check, reference_thresh_segs, ref_dimensions, ref_segs, no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc, common_def):
         print("Detect and Match test image stage reached...........................")
 
         no_def_segs = 0
@@ -314,6 +314,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         test_artwork_list = os.listdir(test_artwork_loc)
 
         common_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])  # Add the test segment location path here ----------------------------------------------------------------
+        common_def_image = common_def.copy()
 
         shape_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
         size_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
@@ -329,7 +330,8 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                 "placement": placement_def_image,
                 "boundary": minmax_def_image,
                 "color": color_def_image,
-                "common": common_def_image
+                "common": common_def_image,
+                "patch": common_def
         }
 
 
@@ -363,7 +365,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                         shape_def_image = mark_defect(shape_def_image, thresh_seg)
                         def_dict["shape"] = shape_def_image
                         shape_def_disp = cv2.resize(shape_def_image, (750, 1000))
-                        cv2.imshow("Shape Defect View", shape_def_disp )
+                        cv2.imshow("Shape Defect View"+str(i), shape_def_disp )
                         cv2.waitKey(0)
 
                         shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Shape/shape.jpg", shape_def_disp)
@@ -392,8 +394,8 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                 shape_def_image = mark_defect(shape_def_image, thresh_seg)
                                 def_dict["shape"] = shape_def_image
                                 shape_def_disp = cv2.resize(shape_def_image, (750, 1000))
-                                cv2.imshow("Shape Defect View", shape_def_disp)
-                                shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Shape/shape.jpg", shape_def_disp)
+                                cv2.imshow("Shape Defect View"+str(i), shape_def_disp)
+                                shape_saved = cv2.imwrite("./Assets/QA_Module/Output/Shape/shape.jpg"+str(i), shape_def_disp)
 
                                 cv2.waitKey(0)
                                 cv2.destroyAllWindows()
@@ -423,7 +425,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                         size_saved = cv2.imwrite("./Assets/QA_Module/Output/Size/size.jpg", size_def_disp)
 
-                                        cv2.imshow("Size Defect View", size_def_disp)
+                                        cv2.imshow("Size Defect View"+str(i), size_def_disp)
 
                                         cv2.waitKey(0)
                                         cv2.destroyAllWindows()
@@ -449,7 +451,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 rotation_def_image = mark_defect(rotation_def_image, thresh_seg)
                                                 def_dict["rotation"] = rotation_def_image
                                                 rotation_def_disp = cv2.resize(rotation_def_image, (750, 1000))
-                                                cv2.imshow("Rotation Defect View", rotation_def_disp)
+                                                cv2.imshow("Rotation Defect View"+str(i), rotation_def_disp)
                                                 rotation_saved = cv2.imwrite("./Assets/QA_Module/Output/Rotation/rotation.jpg",rotation_def_disp)
                                                 cv2.waitKey(0)
                                                 cv2.destroyAllWindows()
@@ -488,7 +490,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                         placement_def_disp = cv2.resize(placement_def_image, (750, 1000))
 
                                                         placement_saved = cv2.imwrite("./Assets/QA_Module/Output/Placement/placement.jpg", placement_def_disp)
-                                                        cv2.imshow("Placement Defect View", placement_def_disp)
+                                                        cv2.imshow("Placement Defect View"+str(i), placement_def_disp)
                                                         cv2.waitKey(0)
                                                         cv2.destroyAllWindows()
                                                         #---------------------------------------------------------------------
@@ -544,7 +546,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 minmax_def_disp = cv2.resize(minmax_def_image, (750,1000))
 
                                                                 boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",minmax_def_disp)
-                                                                cv2.imshow("Minmax Defect View", minmax_def_disp)
+                                                                cv2.imshow("Minmax Defect View"+str(i), minmax_def_disp)
                                                                 cv2.waitKey(0)
                                                                 cv2.destroyAllWindows()
 
@@ -602,14 +604,14 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                         color_def_disp = cv2.resize(color_def_image,(750,1000))
 
                                                                         color_saved = cv2.imwrite("./Assets/QA_Module/Output/Color/color.jpg", color_def_disp)
-                                                                        cv2.imshow("Color Defect View", color_def_disp)
+                                                                        cv2.imshow("Color Defect View"+str(i), color_def_disp)
                                                                         cv2.waitKey(0)
                                                                         cv2.destroyAllWindows()
                                                                         #------------------------------------------
 
         print("Number of defected segemnts : ",no_def_segs)
 
-        def_dict["common"] = color_def_image
+        def_dict["common"] = common_def_image
         common_def_disp = cv2.resize(common_def_image, (1008,1344))
         cv2.imshow("Common image ", common_def_disp)
         cv2.waitKey(0)
@@ -623,7 +625,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",cv2.resize(def_dict["boundary"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
         color_saved = cv2.imwrite("./Assets/QA_Module/Output/Color/color.jpg",cv2.resize(def_dict["color"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
         common_saved = cv2.imwrite("./Assets/QA_Module/Output/Common/common.jpg",cv2.resize(def_dict["common"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
-
+        patch_saved = cv2.imwrite("./Assets/QA_Module/Output/Patch/patch.jpg",cv2.resize(def_dict["patch"][int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
 
 
         return shape_def, size_def, placement_def, rotation_def, color_def, minmax_def
