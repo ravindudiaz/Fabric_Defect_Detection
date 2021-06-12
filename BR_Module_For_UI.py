@@ -64,7 +64,8 @@ class BRModule():
         if width > self.resizeMark :
             self.resizerVal = self.resizeMark/width
 
-            img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal,interpolation=cv.INTER_AREA)
+            img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal)
+            # img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal,interpolation=cv.INTER_AREA)
 
         # create copy of image
         img = img.copy()
@@ -670,7 +671,7 @@ class BRModule():
 
             # self.sharpUniformArtworkMask(refOuterRemovedFilePath)
 
-            self.setDefaultResolutionToAll(refOuterRemovedFilePath,"ref")
+            # self.setDefaultResolutionToAll(refOuterRemovedFilePath,"ref")
 
             return self.generateOutputPath(refOuterRemovedFilePath,"ref")
 
@@ -692,6 +693,6 @@ class BRModule():
 
             # self.sharpUniformArtworkMask(testOuterRemovedFilePath)
             
-            self.setDefaultResolutionToAll(testOuterRemovedFilePath,"test")
+            # self.setDefaultResolutionToAll(testOuterRemovedFilePath,"test")
 
             return self.generateOutputPath(testOuterRemovedFilePath,"test")
