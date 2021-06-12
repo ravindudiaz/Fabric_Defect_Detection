@@ -11,6 +11,46 @@ class BRModule():
     rect = (0,0,1,1)
     resizeMark = 1800
     resizerVal = .3
+    originalWidth = 0
+
+    # --input folders--
+
+    #Include both of textured and uniform reference fabric images with background
+    referenceImages = 'Assets/BR_Module/Input/ref'
+    #Include both of textured and uniform test fabric images with background
+    testImages = 'Assets/BR_Module/Input/test'
+    #Include textured fabric sample images
+    texSamples = 'Assets/BR_Module/Input/tex_samples'
+
+    # --output folders--
+
+    #To store outer background removed fabric images(Reference/Test)
+    outerRemReferenceImages = 'Assets/BR_Module/Output/outer_removed_ref'
+    outerRemTestImages = 'Assets/BR_Module/Output/outer_removed_test'
+
+    #To store registrated test images(Test)
+    registratedTestImages = 'Assets/BR_Module/Output/registrated_test'
+
+    #To store uniform artwork edge images(Reference/Test)
+    edgeReferenceImages = 'Assets/BR_Module/Output/edge_ref'
+    edgeTestImages = 'Assets/BR_Module/Output/edge_test'
+
+    #To store textured artwork drafts(Reference/Test)
+    artworksDraftsRef = 'Assets/BR_Module/Output/artworks_drafts_ref'
+    artworksDraftsTest = 'Assets/BR_Module/Output/artworks_drafts_test'
+
+    #To store fabric artworks masks(Reference/Test)
+    artworkMasksReferenceImages = 'Assets/BR_Module/Output/artwork_masks_ref'
+    artworkMasksTestImages = 'Assets/BR_Module/Output/artwork_masks_test'
+
+    #To store final output,include fabric artworks(Reference/Test)
+    artworksReferenceImages = 'Assets/BR_Module/Output/artworks_ref'
+    artworksTestImages = 'Assets/BR_Module/Output/artworks_test'
+
+    #To store final output,include fabric artworks(Reference/Test)
+    fabricMasksRef = 'Assets/BR_Module/Output/fabric_masks_ref'
+    fabricMasksTest = 'Assets/BR_Module/Output/fabric_masks_test'
+
     
     def removeOuterBackground(self,imgPath,saveFolder,type):
 
@@ -19,11 +59,12 @@ class BRModule():
         img = cv.imread(cv.samples.findFile(editedFileName))
             
         width = img.shape[1]
+        self.originalWidth = width
 
         if width > self.resizeMark :
             self.resizerVal = self.resizeMark/width
 
-            img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal)
+            img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal,interpolation=cv.INTER_AREA)
 
         # create copy of image
         img = img.copy()
@@ -468,11 +509,76 @@ class BRModule():
         if isTrue:
             return True
         else:
-            return False 
+            return False
 
 
+    def setDefaultResolutionToAll(self,path,type):
 
-    
+        filename = self.splitFileNames(path)
+
+        outerRemReferenceImagePath = self.outerRemReferenceImages+"/"+filename
+        outerRemTestImagePath = self.outerRemTestImages+"/"+filename
+
+        registratedTestImagePath = self.registratedTestImages+"/"+filename
+
+        edgeReferenceImagePath = self.edgeReferenceImages+"/"+filename
+        edgeTestImagePath = self.edgeTestImages+"/"+filename
+
+        artworksDraftsRefImagePath = self.artworksDraftsRef+"/"+filename
+        artworksDraftsTestImagePath = self.artworksDraftsTest+"/"+filename
+
+        artworkMasksReferenceImagePath = self.artworkMasksReferenceImages+"/"+filename
+        artworkMasksTestImagePath =  self.artworkMasksTestImages+"/"+filename
+
+        artworksReferenceImagePath = self.artworksReferenceImages+"/"+filename
+        artworksTestImagePath = self.artworksTestImages+"/"+filename
+
+        fabricMasksRefImagePath = self.fabricMasksRef+"/"+filename
+        fabricMasksTestImagePath = self.fabricMasksTest+"/"+filename
+
+        if type == "ref":
+            if "uni_" in filename:
+                self.resetImageResolution(edgeReferenceImagePath)
+
+            if "_tex_" in filename:
+                self.resetImageResolution(artworksDraftsRefImagePath)
+
+            self.resetImageResolution(artworkMasksReferenceImagePath)
+            self.resetImageResolution(artworksReferenceImagePath)
+            self.resetImageResolution(fabricMasksRefImagePath)
+
+        if type == "test":
+            # self.resetImageResolution(outerRemReferenceImagePath)
+            self.resetImageResolution(outerRemTestImagePath)
+            self.resetImageResolution(registratedTestImagePath)
+
+            if "uni_" in filename:
+                self.resetImageResolution(edgeTestImagePath)
+
+            if "_tex_" in filename:
+                self.resetImageResolution(artworksDraftsTestImagePath)
+
+            self.resetImageResolution(artworkMasksTestImagePath)
+            self.resetImageResolution(artworksTestImagePath)
+            self.resetImageResolution(fabricMasksTestImagePath)
+
+
+    def resetImageResolution(self,path):
+
+        image = cv.imread(path)
+
+        imageWidth =  image.shape[1]
+
+        resizerVal = imageWidth/self.originalWidth
+
+        reserVal = 1/resizerVal
+
+        if not reserVal == 1:
+
+            image = cv.resize(image,None,fx=reserVal,fy=reserVal,interpolation=cv.INTER_LINEAR)
+
+            cv.imwrite(path,image)
+
 
 
 
@@ -482,143 +588,110 @@ class BRModule():
 
         print('Start Background Removal Module Execution...')
 
-        # --input folders--
-
-        #Include both of textured and uniform reference fabric images with background
-        referenceImages = 'Assets/BR_Module/Input/ref'
-        #Include both of textured and uniform test fabric images with background
-        testImages = 'Assets/BR_Module/Input/test'
-        #Include textured fabric sample images
-        texSamples = 'Assets/BR_Module/Input/tex_samples'
-
-        # --output folders--
-
-        #To store outer background removed fabric images(Reference/Test)
-        outerRemReferenceImages = 'Assets/BR_Module/Output/outer_removed_ref'
-        outerRemTestImages = 'Assets/BR_Module/Output/outer_removed_test'
-
-        #To store registrated test images(Test)
-        registratedTestImages = 'Assets/BR_Module/Output/registrated_test'
-
-        #To store uniform artwork edge images(Reference/Test)
-        edgeReferenceImages = 'Assets/BR_Module/Output/edge_ref'
-        edgeTestImages = 'Assets/BR_Module/Output/edge_test'
-
-        #To store textured artwork drafts(Reference/Test)
-        artworksDraftsRef = 'Assets/BR_Module/Output/artworks_drafts_ref'
-        artworksDraftsTest = 'Assets/BR_Module/Output/artworks_drafts_test'
-
-        #To store fabric artworks masks(Reference/Test)
-        artworkMasksReferenceImages = 'Assets/BR_Module/Output/artwork_masks_ref'
-        artworkMasksTestImages = 'Assets/BR_Module/Output/artwork_masks_test'
-
-        #To store final output,include fabric artworks(Reference/Test)
-        artworksReferenceImages = 'Assets/BR_Module/Output/artworks_ref'
-        artworksTestImages = 'Assets/BR_Module/Output/artworks_test'
-
-        #To store final output,include fabric artworks(Reference/Test)
-        fabricMasksRef = 'Assets/BR_Module/Output/fabric_masks_ref'
-        fabricMasksTest = 'Assets/BR_Module/Output/fabric_masks_test'
-
+        
         #creating output folders if not exists
         try:
-            if not path.exists(outerRemReferenceImages):
-                os.makedirs(outerRemReferenceImages)
+            if not path.exists(self.outerRemReferenceImages):
+                os.makedirs(self.outerRemReferenceImages)
 
-            if not path.exists(outerRemTestImages):
-                os.makedirs(outerRemTestImages)
+            if not path.exists(self.outerRemTestImages):
+                os.makedirs(self.outerRemTestImages)
 
-            if not path.exists(registratedTestImages):
-                os.makedirs(registratedTestImages)
+            if not path.exists(self.registratedTestImages):
+                os.makedirs(self.registratedTestImages)
 
-            if not path.exists(edgeReferenceImages):
-                os.makedirs(edgeReferenceImages)
+            if not path.exists(self.edgeReferenceImages):
+                os.makedirs(self.edgeReferenceImages)
 
-            if not path.exists(edgeTestImages):
-                os.makedirs(edgeTestImages)
+            if not path.exists(self.edgeTestImages):
+                os.makedirs(self.edgeTestImages)
 
-            if not path.exists(artworksDraftsRef):
-                os.makedirs(artworksDraftsRef)
+            if not path.exists(self.artworksDraftsRef):
+                os.makedirs(self.artworksDraftsRef)
 
-            if not path.exists(artworksDraftsTest):
-                os.makedirs(artworksDraftsTest)
+            if not path.exists(self.artworksDraftsTest):
+                os.makedirs(self.artworksDraftsTest)
 
-            if not path.exists(artworkMasksReferenceImages):
-                os.makedirs(artworkMasksReferenceImages)
+            if not path.exists(self.artworkMasksReferenceImages):
+                os.makedirs(self.artworkMasksReferenceImages)
 
-            if not path.exists(artworkMasksTestImages):
-                os.makedirs(artworkMasksTestImages)
+            if not path.exists(self.artworkMasksTestImages):
+                os.makedirs(self.artworkMasksTestImages)
 
-            if not path.exists(artworksReferenceImages):
-                os.makedirs(artworksReferenceImages)
+            if not path.exists(self.artworksReferenceImages):
+                os.makedirs(self.artworksReferenceImages)
                 
-            if not path.exists(artworksTestImages):
-                os.makedirs(artworksTestImages)
+            if not path.exists(self.artworksTestImages):
+                os.makedirs(self.artworksTestImages)
 
-            if not path.exists(fabricMasksRef):
-                os.makedirs(fabricMasksRef)
+            if not path.exists(self.fabricMasksRef):
+                os.makedirs(self.fabricMasksRef)
 
-            if not path.exists(fabricMasksTest):
-                os.makedirs(fabricMasksTest)
+            if not path.exists(self.fabricMasksTest):
+                os.makedirs(self.fabricMasksTest)
 
         except:
             import traceback
             traceback.print_exc()
 
         if type == "ref":
-            self.deleteGeneratedFiles(outerRemReferenceImages)
-            self.deleteGeneratedFiles(edgeReferenceImages)
-            self.deleteGeneratedFiles(artworksDraftsRef)
-            self.deleteGeneratedFiles(artworkMasksReferenceImages)
-            self.deleteGeneratedFiles(artworksReferenceImages)
-            self.deleteGeneratedFiles(fabricMasksRef)
+            self.deleteGeneratedFiles(self.outerRemReferenceImages)
+            self.deleteGeneratedFiles(self.edgeReferenceImages)
+            self.deleteGeneratedFiles(self.artworksDraftsRef)
+            self.deleteGeneratedFiles(self.artworkMasksReferenceImages)
+            self.deleteGeneratedFiles(self.artworksReferenceImages)
+            self.deleteGeneratedFiles(self.fabricMasksRef)
 
 
         if type == "test":
-            self.deleteGeneratedFiles(outerRemTestImages)
-            self.deleteGeneratedFiles(registratedTestImages)
-            self.deleteGeneratedFiles(edgeTestImages)
-            self.deleteGeneratedFiles(artworksDraftsTest)
-            self.deleteGeneratedFiles(artworkMasksTestImages)
-            self.deleteGeneratedFiles(artworksTestImages)
-            self.deleteGeneratedFiles(fabricMasksTest)
+            self.deleteGeneratedFiles(self.outerRemTestImages)
+            self.deleteGeneratedFiles(self.registratedTestImages)
+            self.deleteGeneratedFiles(self.edgeTestImages)
+            self.deleteGeneratedFiles(self.artworksDraftsTest)
+            self.deleteGeneratedFiles(self.artworkMasksTestImages)
+            self.deleteGeneratedFiles(self.artworksTestImages)
+            self.deleteGeneratedFiles(self.fabricMasksTest)
 
         refOuterRemovedFilePath =""
         testOuterRemovedFilePath =""
 
         if type == "ref":
 
-            refOuterRemovedFilePath = self.removeOuterBackground(imgRefPath,outerRemReferenceImages,"ref")
+            refOuterRemovedFilePath = self.removeOuterBackground(imgRefPath,self.outerRemReferenceImages,"ref")
 
-            self.generateUniformFabricEdge(refOuterRemovedFilePath,edgeReferenceImages)
+            self.generateUniformFabricEdge(refOuterRemovedFilePath,self.edgeReferenceImages)
 
-            artworkDraftPath = self.generateteTexturedArtworkDarft(texSamplesPath,refOuterRemovedFilePath,artworksDraftsRef)
+            artworkDraftPath = self.generateteTexturedArtworkDarft(texSamplesPath,refOuterRemovedFilePath,self.artworksDraftsRef)
 
             if artworkDraftPath != "":
                 self.sharpTexturedArtworkDraft(artworkDraftPath)
 
-            refOuterRemovedFilePath = self.isolateFabArtwork(refOuterRemovedFilePath,'ref',artworksReferenceImages)
+            refOuterRemovedFilePath = self.isolateFabArtwork(refOuterRemovedFilePath,'ref',self.artworksReferenceImages)
 
             # self.sharpUniformArtworkMask(refOuterRemovedFilePath)
+
+            self.setDefaultResolutionToAll(refOuterRemovedFilePath,"ref")
 
             return self.generateOutputPath(refOuterRemovedFilePath,"ref")
 
         if type == "test":
 
-            refOuterRemovedFilePath = outerRemReferenceImages+"/"+self.splitFileNames(imgRefPath)
-            testOuterRemovedFilePath = self.removeOuterBackground(imgTestPath,outerRemTestImages,"test")
+            refOuterRemovedFilePath = self.outerRemReferenceImages+"/"+self.splitFileNames(imgRefPath)
+            testOuterRemovedFilePath = self.removeOuterBackground(imgTestPath,self.outerRemTestImages,"test")
             
-            testOuterRemovedFilePath = self.registratedMachingFiles(refOuterRemovedFilePath,testOuterRemovedFilePath,registratedTestImages)
+            testOuterRemovedFilePath = self.registratedMachingFiles(refOuterRemovedFilePath,testOuterRemovedFilePath,self.registratedTestImages)
 
-            self.generateUniformFabricEdge(testOuterRemovedFilePath,edgeTestImages)
+            self.generateUniformFabricEdge(testOuterRemovedFilePath,self.edgeTestImages)
 
-            artworkDraftPath = self.generateteTexturedArtworkDarft(texSamplesPath,testOuterRemovedFilePath,artworksDraftsTest)
+            artworkDraftPath = self.generateteTexturedArtworkDarft(texSamplesPath,testOuterRemovedFilePath,self.artworksDraftsTest)
 
             if artworkDraftPath != "":
                 self.sharpTexturedArtworkDraft(artworkDraftPath)
 
-            testOuterRemovedFilePath = self.isolateFabArtwork(testOuterRemovedFilePath,'test',artworksTestImages)
+            testOuterRemovedFilePath = self.isolateFabArtwork(testOuterRemovedFilePath,'test',self.artworksTestImages)
 
             # self.sharpUniformArtworkMask(testOuterRemovedFilePath)
+            
+            self.setDefaultResolutionToAll(testOuterRemovedFilePath,"test")
 
             return self.generateOutputPath(testOuterRemovedFilePath,"test")
