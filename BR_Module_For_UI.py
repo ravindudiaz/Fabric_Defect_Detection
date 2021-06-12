@@ -461,7 +461,7 @@ class BRModule():
     def checkHavingRef(self,path):
 
         filename = self.splitFileNames(path)
-        outerRemovedImagepath = 'Assets/BR_Module/Output/outer_removed_ref'+filename
+        outerRemovedImagepath = 'Assets/BR_Module/Output/outer_removed_ref/'+filename
 
         isTrue = os.path.isfile(outerRemovedImagepath)
 

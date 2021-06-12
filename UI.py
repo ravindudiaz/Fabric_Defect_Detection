@@ -324,7 +324,7 @@ def removeBackground_test():
 
     isOuterRemovedFileAvailable = br.BRModule().checkHavingRef(image_ref_path)
 
-    if (isOuterRemovedFileAvailable):
+    if not isOuterRemovedFileAvailable:
         messagebox.showerror("File Generation Alert", "Please generate reference image before test image!")
         return
 
