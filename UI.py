@@ -308,6 +308,7 @@ def removeBackground_test():
     image_ref_nameExeptExt = os.path.splitext(image_ref_name)[0]
     image_tex_sample_name = br.BRModule().splitFileNames(image_tex_sample_path)
     image_tex_sample_nameExeptExt = os.path.splitext(image_tex_sample_name)[0]
+    
 
     if (image_test_path == ''):
         messagebox.showerror("Invalid path", "Invalid test image path. Please make a valid selection!")
@@ -319,6 +320,12 @@ def removeBackground_test():
 
     if not (image_ref_nameExeptExt in image_test_name):
         messagebox.showerror("Invalid Selection", "Please select a relavant reference image!")
+        return
+
+    isOuterRemovedFileAvailable = br.BRModule().checkHavingRef(image_ref_path)
+
+    if (isOuterRemovedFileAvailable):
+        messagebox.showerror("File Generation Alert", "Please generate reference image before test image!")
         return
 
     if '_tex_' in image_test_name and image_tex_sample_path == '':

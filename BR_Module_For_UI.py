@@ -458,6 +458,22 @@ class BRModule():
             # image = image.filter(ImageFilter.MedianFilter(size=3))
             # image.save(editedFileName)
 
+    def checkHavingRef(self,path):
+
+        filename = self.splitFileNames(path)
+        outerRemovedImagepath = 'Assets/BR_Module/Output/outer_removed_ref'+filename
+
+        isTrue = os.path.isfile(outerRemovedImagepath)
+
+        if isTrue:
+            return True
+        else:
+            return False 
+
+
+
+    
+
 
 
 
@@ -589,7 +605,7 @@ class BRModule():
 
         if type == "test":
 
-            refOuterRemovedFilePath = self.removeOuterBackground(imgRefPath,outerRemReferenceImages,"ref")
+            refOuterRemovedFilePath = outerRemReferenceImages+"/"+self.splitFileNames(imgRefPath)
             testOuterRemovedFilePath = self.removeOuterBackground(imgTestPath,outerRemTestImages,"test")
             
             testOuterRemovedFilePath = self.registratedMachingFiles(refOuterRemovedFilePath,testOuterRemovedFilePath,registratedTestImages)
