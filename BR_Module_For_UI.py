@@ -9,7 +9,8 @@ from os import path
 class BRModule():
 
     rect = (0,0,1,1)
-    resizeMark = 1800
+    resizeMark = 2000
+    resizeMarkMask = 500
     resizerVal = .3
     originalWidth = 0
 
@@ -64,8 +65,7 @@ class BRModule():
         if width > self.resizeMark :
             self.resizerVal = self.resizeMark/width
 
-            img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal)
-            # img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal,interpolation=cv.INTER_AREA)
+            img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal,interpolation=cv.INTER_AREA)
 
         # create copy of image
         img = img.copy()
@@ -279,6 +279,15 @@ class BRModule():
         if 'uni_' in filename:
 
             img = cv.imread(cv.samples.findFile(filePath))
+            image_copy = img.copy()
+
+            resizerVal = 1
+
+            if img.shape[1] > self.resizeMarkMask :
+                resizerVal = self.resizeMarkMask/img.shape[1]
+
+                img = cv.resize(img,None,fx=resizerVal,fy=resizerVal,interpolation=cv.INTER_AREA)
+
             self.getOptimalThresholdVal(img)
 
             gaussian = cv.GaussianBlur(img,(3,3),cv.BORDER_DEFAULT)
@@ -287,6 +296,16 @@ class BRModule():
             nameWithEdge = saveFolder+"/"+filename        
 
             cv.imwrite(nameWithEdge, edges)
+
+            img = cv.imread(cv.samples.findFile(nameWithEdge))
+
+            reserVal = 1/resizerVal
+
+            if not reserVal == 1:
+
+                image = cv.resize(img,(self.resizeMark,image_copy.shape[0]),interpolation=cv.INTER_CUBIC)
+
+                cv.imwrite(nameWithEdge,image)
 
 
     
@@ -576,7 +595,7 @@ class BRModule():
 
         if not reserVal == 1:
 
-            image = cv.resize(image,None,fx=reserVal,fy=reserVal,interpolation=cv.INTER_LINEAR)
+            image = cv.resize(image,None,fx=reserVal,fy=reserVal,interpolation=cv.INTER_CUBIC)
 
             cv.imwrite(path,image)
 
@@ -671,7 +690,7 @@ class BRModule():
 
             # self.sharpUniformArtworkMask(refOuterRemovedFilePath)
 
-            # self.setDefaultResolutionToAll(refOuterRemovedFilePath,"ref")
+            self.setDefaultResolutionToAll(refOuterRemovedFilePath,"ref")
 
             return self.generateOutputPath(refOuterRemovedFilePath,"ref")
 
@@ -693,6 +712,6 @@ class BRModule():
 
             # self.sharpUniformArtworkMask(testOuterRemovedFilePath)
             
-            # self.setDefaultResolutionToAll(testOuterRemovedFilePath,"test")
+            self.setDefaultResolutionToAll(testOuterRemovedFilePath,"test")
 
             return self.generateOutputPath(testOuterRemovedFilePath,"test")
