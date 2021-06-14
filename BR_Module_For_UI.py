@@ -8,11 +8,18 @@ from os import path
 
 class BRModule():
 
-    rect = (0,0,1,1)
+    #Global variables
+
+    rect = 0
     resizeMark = 2000
     resizeMarkMask = 500
-    resizerVal = .3
+    resizerVal = 0
     originalWidth = 0
+    referenceImageType = 'ref'
+    testImageType = 'test'
+    uniformCode = 'uni_'
+    texturedCode = '_tex_'
+
 
     # --input folders--
 
@@ -67,18 +74,14 @@ class BRModule():
 
             img = cv.resize(img,None,fx=self.resizerVal,fy=self.resizerVal,interpolation=cv.INTER_AREA)
 
-        # create copy of image
         img = img.copy()
         self.img = img
         self.img_copy = self.img.copy()
 
-        # allocate array for output
         self.output = np.zeros(self.img.shape, np.uint8)
 
-        # get optimal threshold value using OTSU method
         self.getOptimalThresholdVal(self.img_copy)
 
-        # generating mask for grabcut
         self.generateFabricMask(self.img_copy,filename,type)
 
         try:
@@ -202,11 +205,11 @@ class BRModule():
 
         nameWithMask = ""
 
-        if type == "ref":
-            nameWithMask = "Assets/BR_Module/Output/fabric_masks_ref/"+name
+        if type == self.referenceImageType:
+            nameWithMask = self.fabricMasksRef+"/"+name
 
-        if type == "test":
-            nameWithMask = "Assets/BR_Module/Output/fabric_masks_test/"+name
+        if type == self.testImageType:
+            nameWithMask = self.fabricMasksTest+"/"+name
               
         cv.imwrite(nameWithMask, newmask)
 
@@ -215,11 +218,11 @@ class BRModule():
     def generateUniformArtWorkMask(self,filename,type):
 
         editedFileName = ""
-        if type == "ref":
-            editedFileName = 'Assets/BR_Module/Output/edge_ref/'+ filename
+        if type == self.referenceImageType:
+            editedFileName = self.edgeReferenceImages+'/'+ filename
 
-        if type == "test":
-            editedFileName = 'Assets/BR_Module/Output/edge_test/'+ filename
+        if type == self.testImageType:
+            editedFileName = self.edgeTestImages+'/'+ filename
 
 
         img = cv.imread(cv.samples.findFile(editedFileName))
@@ -228,8 +231,6 @@ class BRModule():
         
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         _,mask = cv.threshold(img,self.minThresholdVal,self.maxThresholdVal,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
-
-        # mask = cv.fastNlMeansDenoising(mask,None,10,10,7,21)
 
         kernal = np.ones((5,5), np.uint8)
         mg = cv.morphologyEx(mask, cv.MORPH_GRADIENT, kernal)
@@ -240,7 +241,6 @@ class BRModule():
 
         contours, hierarchy = cv.findContours(edges,cv.RETR_TREE,cv.CHAIN_APPROX_NONE)
         
-        #first sort the array by area
         sorteddata = sorted(contours, key = cv.contourArea, reverse=True)
 
         image_binary = np.zeros(img.shape[:2],np.uint8)
@@ -248,11 +248,8 @@ class BRModule():
         for n in range(0,len(sorteddata)):
 
             if n > 4:
-                # x, y, w, h = cv.boundingRect(sorteddata[n])
                 
-                cv.drawContours(image_binary, [sorteddata[n]],
-                        -1, (255, 255, 255), -1)
-                # cv.rectangle(image_binary, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                cv.drawContours(image_binary, [sorteddata[n]],-1, (255, 255, 255), -1)
 
 
         self.mask = np.zeros(img.shape[:2],np.uint8)
@@ -263,10 +260,10 @@ class BRModule():
 
         maskName = ""
         if type == "ref":
-            maskName = "Assets/BR_Module/Output/artwork_masks_ref/"+filename
+            maskName = self.artworkMasksReferenceImages+"/"+filename
 
         if type == "test":
-            maskName = "Assets/BR_Module/Output/artwork_masks_test/"+filename
+            maskName = self.artworkMasksTestImages+"/"+filename
 
         cv.imwrite(maskName, image_binary)
 
@@ -276,7 +273,7 @@ class BRModule():
 
         filename = self.splitFileNames(filePath)
 
-        if 'uni_' in filename:
+        if self.uniformCode in filename:
 
             img = cv.imread(cv.samples.findFile(filePath))
             image_copy = img.copy()
@@ -313,7 +310,7 @@ class BRModule():
 
         filename = self.splitFileNames(filePath)
 
-        if 'uni_' in filename or '_tex_' in filename:
+        if self.uniformCode in filename or self.texturedCode in filename:
 
             editedFileName = filePath
             img = cv.imread(cv.samples.findFile(editedFileName))
@@ -327,10 +324,10 @@ class BRModule():
             self.getOptimalThresholdVal(self.img_copy)
 
 
-            if 'uni_' in filename:
+            if self.uniformCode in filename:
                 self.generateUniformArtWorkMask(filename,type)
 
-            if '_tex_' in filename:
+            if self.texturedCode in filename:
                 self.generateteTexturedArtworkMask(filename,type)
 
             try:
@@ -384,7 +381,7 @@ class BRModule():
 
         filename = self.splitFileNames(filePath)
 
-        if '_tex_' in filename:
+        if self.texturedCode in filename:
             
             sampleFilename = self.splitFileNames(sampleFilePath)
 
@@ -456,12 +453,15 @@ class BRModule():
     def generateteTexturedArtworkMask(self,filename,type):
 
         editedFileName = ''
+        maskName = ''
 
-        if type == "ref":
-            editedFileName = 'Assets/BR_Module/Output/artworks_drafts_ref/'+ filename
+        if type == self.referenceImageType:
+            editedFileName = self.artworksDraftsRef+'/'+ filename
+            maskName = self.artworkMasksReferenceImages+"/"+filename
 
-        if type == "test":
-            editedFileName = 'Assets/BR_Module/Output/artworks_drafts_test/'+ filename
+        if type == self.testImageType:
+            editedFileName = self.artworksDraftsTest+'/'+ filename
+            maskName = self.artworkMasksTestImages+"/"+filename
 
        
         img = np.array(Image.open(editedFileName).convert('L'))
@@ -470,19 +470,15 @@ class BRModule():
         res, img = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
 
         cv.floodFill(img, None, (0,0), 0)
+
+        # kernel = np.ones((5,5),np.uint8)
+        # img = cv.morphologyEx(img, cv.MORPH_CLOSE, kernel)
    
         self.mask = np.zeros(img.shape[:2],np.uint8)
         newmask = img
 
         self.mask[newmask == 0] = 0
-        self.mask[newmask == 255] = 1
-
-        maskName = ""
-        if type == "ref":
-            maskName = "Assets/BR_Module/Output/artwork_masks_ref/"+filename
-
-        if type == "test":
-            maskName = "Assets/BR_Module/Output/artwork_masks_test/"+filename
+        self.mask[newmask == 255] = 1            
 
         Image.fromarray(img).save(maskName)
 
@@ -498,7 +494,7 @@ class BRModule():
 
         filename = self.splitFileNames(artworkPath)
 
-        if "uni_" in filename:
+        if self.uniformCode in filename:
             editedFileName = artworkPath
             
             image = cv.imread(editedFileName)
@@ -522,7 +518,7 @@ class BRModule():
     def checkHavingRef(self,path):
 
         filename = self.splitFileNames(path)
-        outerRemovedImagepath = 'Assets/BR_Module/Output/outer_removed_ref/'+filename
+        outerRemovedImagepath = self.outerRemReferenceImages+'/'+filename
 
         isTrue = os.path.isfile(outerRemovedImagepath)
 
@@ -556,26 +552,26 @@ class BRModule():
         fabricMasksRefImagePath = self.fabricMasksRef+"/"+filename
         fabricMasksTestImagePath = self.fabricMasksTest+"/"+filename
 
-        if type == "ref":
-            if "uni_" in filename:
+        if type == self.referenceImageType:
+            if self.uniformCode in filename:
                 self.resetImageResolution(edgeReferenceImagePath)
 
-            if "_tex_" in filename:
+            if self.texturedCode in filename:
                 self.resetImageResolution(artworksDraftsRefImagePath)
 
             self.resetImageResolution(artworkMasksReferenceImagePath)
             self.resetImageResolution(artworksReferenceImagePath)
             self.resetImageResolution(fabricMasksRefImagePath)
 
-        if type == "test":
+        if type == self.testImageType:
             # self.resetImageResolution(outerRemReferenceImagePath)
             self.resetImageResolution(outerRemTestImagePath)
             self.resetImageResolution(registratedTestImagePath)
 
-            if "uni_" in filename:
+            if self.uniformCode in filename:
                 self.resetImageResolution(edgeTestImagePath)
 
-            if "_tex_" in filename:
+            if self.texturedCode in filename:
                 self.resetImageResolution(artworksDraftsTestImagePath)
 
             self.resetImageResolution(artworkMasksTestImagePath)
@@ -654,7 +650,7 @@ class BRModule():
             import traceback
             traceback.print_exc()
 
-        if type == "ref":
+        if type == self.referenceImageType:
             self.deleteGeneratedFiles(self.outerRemReferenceImages)
             self.deleteGeneratedFiles(self.edgeReferenceImages)
             self.deleteGeneratedFiles(self.artworksDraftsRef)
@@ -663,7 +659,7 @@ class BRModule():
             self.deleteGeneratedFiles(self.fabricMasksRef)
 
 
-        if type == "test":
+        if type == self.testImageType:
             self.deleteGeneratedFiles(self.outerRemTestImages)
             self.deleteGeneratedFiles(self.registratedTestImages)
             self.deleteGeneratedFiles(self.edgeTestImages)
@@ -675,9 +671,9 @@ class BRModule():
         refOuterRemovedFilePath =""
         testOuterRemovedFilePath =""
 
-        if type == "ref":
+        if type == self.referenceImageType:
 
-            refOuterRemovedFilePath = self.removeOuterBackground(imgRefPath,self.outerRemReferenceImages,"ref")
+            refOuterRemovedFilePath = self.removeOuterBackground(imgRefPath,self.outerRemReferenceImages,type)
 
             self.generateUniformFabricEdge(refOuterRemovedFilePath,self.edgeReferenceImages)
 
@@ -686,18 +682,16 @@ class BRModule():
             if artworkDraftPath != "":
                 self.sharpTexturedArtworkDraft(artworkDraftPath)
 
-            refOuterRemovedFilePath = self.isolateFabArtwork(refOuterRemovedFilePath,'ref',self.artworksReferenceImages)
+            refOuterRemovedFilePath = self.isolateFabArtwork(refOuterRemovedFilePath,type,self.artworksReferenceImages)
 
-            # self.sharpUniformArtworkMask(refOuterRemovedFilePath)
+            self.setDefaultResolutionToAll(refOuterRemovedFilePath,type)
 
-            self.setDefaultResolutionToAll(refOuterRemovedFilePath,"ref")
+            return self.generateOutputPath(refOuterRemovedFilePath,type)
 
-            return self.generateOutputPath(refOuterRemovedFilePath,"ref")
-
-        if type == "test":
+        if type == self.testImageType:
 
             refOuterRemovedFilePath = self.outerRemReferenceImages+"/"+self.splitFileNames(imgRefPath)
-            testOuterRemovedFilePath = self.removeOuterBackground(imgTestPath,self.outerRemTestImages,"test")
+            testOuterRemovedFilePath = self.removeOuterBackground(imgTestPath,self.outerRemTestImages,type)
             
             testOuterRemovedFilePath = self.registratedMachingFiles(refOuterRemovedFilePath,testOuterRemovedFilePath,self.registratedTestImages)
 
@@ -708,10 +702,8 @@ class BRModule():
             if artworkDraftPath != "":
                 self.sharpTexturedArtworkDraft(artworkDraftPath)
 
-            testOuterRemovedFilePath = self.isolateFabArtwork(testOuterRemovedFilePath,'test',self.artworksTestImages)
-
-            # self.sharpUniformArtworkMask(testOuterRemovedFilePath)
+            testOuterRemovedFilePath = self.isolateFabArtwork(testOuterRemovedFilePath,type,self.artworksTestImages)
             
-            self.setDefaultResolutionToAll(testOuterRemovedFilePath,"test")
+            self.setDefaultResolutionToAll(testOuterRemovedFilePath,type)
 
-            return self.generateOutputPath(testOuterRemovedFilePath,"test")
+            return self.generateOutputPath(testOuterRemovedFilePath,type)
