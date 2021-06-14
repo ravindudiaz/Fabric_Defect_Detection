@@ -218,11 +218,15 @@ class BRModule():
     def generateUniformArtWorkMask(self,filename,type):
 
         editedFileName = ""
+        maskName = ""
+
         if type == self.referenceImageType:
             editedFileName = self.edgeReferenceImages+'/'+ filename
+            maskName = self.artworkMasksReferenceImages+"/"+filename
 
         if type == self.testImageType:
             editedFileName = self.edgeTestImages+'/'+ filename
+            maskName = self.artworkMasksTestImages+"/"+filename
 
 
         img = cv.imread(cv.samples.findFile(editedFileName))
@@ -257,13 +261,6 @@ class BRModule():
 
         self.mask[newmask == 0] = 0
         self.mask[newmask == 255] = 1
-
-        maskName = ""
-        if type == "ref":
-            maskName = self.artworkMasksReferenceImages+"/"+filename
-
-        if type == "test":
-            maskName = self.artworkMasksTestImages+"/"+filename
 
         cv.imwrite(maskName, image_binary)
 
