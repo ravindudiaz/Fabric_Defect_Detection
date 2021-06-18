@@ -11,7 +11,7 @@ class BRModule():
     #Global variables
 
     rect = 0
-    resizeMark = 2000
+    resizeMark = 1800
     resizeMarkMask = 500
     resizerVal = 0
     originalWidth = 0
@@ -460,24 +460,54 @@ class BRModule():
             editedFileName = self.artworksDraftsTest+'/'+ filename
             maskName = self.artworkMasksTestImages+"/"+filename
 
+
+        img = cv.imread(cv.samples.findFile(editedFileName))
+
+        self.getOptimalThresholdVal(img)
+        
+        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        _,mask = cv.threshold(img,self.minThresholdVal,self.maxThresholdVal,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
+
+        kernal = np.ones((5,5), np.uint8)
+        mg = cv.morphologyEx(mask, cv.MORPH_GRADIENT, kernal)
+        mg = cv.medianBlur(mg,5)
+
+        gaussian = cv.GaussianBlur(mask,(3,3),cv.BORDER_DEFAULT)
+        edges = cv.Canny(gaussian,self.minThresholdVal,self.maxThresholdVal)
+
+        contours, hierarchy = cv.findContours(edges,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_NONE)
+        
+        sorteddata = sorted(contours, key = cv.contourArea, reverse=True)
+
+        image_binary = np.zeros(img.shape[:2],np.uint8)
+
+        cv.drawContours(image_binary, contours,-1, (255, 255, 255), -1)
+
+        # for n in range(0,len(sorteddata)):
+
+        #     if n >= 0:
+                
+        #         cv.drawContours(image_binary, [sorteddata[n]],-1, (255, 255, 255), -1)
+
        
-        img = np.array(Image.open(editedFileName).convert('L'))
+        # img = np.array(Image.open(editedFileName).convert('L'))
 
-        img = cv.normalize(img, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
-        res, img = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
+        # img = cv.normalize(img, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
+        # res, img = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
 
-        cv.floodFill(img, None, (0,0), 0)
+        # cv.floodFill(img, None, (0,0), 0)
 
         # kernel = np.ones((5,5),np.uint8)
         # img = cv.morphologyEx(img, cv.MORPH_CLOSE, kernel)
    
         self.mask = np.zeros(img.shape[:2],np.uint8)
-        newmask = img
+        newmask = image_binary
 
         self.mask[newmask == 0] = 0
         self.mask[newmask == 255] = 1            
 
-        Image.fromarray(img).save(maskName)
+        # Image.fromarray(self.mask).save(maskName)
+        cv.imwrite(maskName,image_binary)
 
     def generateOutputPath(self,outerRemovedOutPath,type):
         
