@@ -110,15 +110,19 @@ def remove_small_contous(img):
         for contour in contours:
             cnt_areas.append(cv2.contourArea(contour))
         cnt_areas_sort = sorted(cnt_areas, reverse=True)
-
+        print(cnt_areas_sort )
         items_to_be_removed = []
         for i, cnt in enumerate(contours):
-            if hierarchy[0][i][3] == -1 and hierarchy[0][i][2] == -1:
-            #if hierarchy[0][i][3] == -1:
-                # print('remove ready' + str(i))
-                if cv2.contourArea(cnt)*500 < cnt_areas_sort[0]:
-                    # print('removed' + str(i))
-                    items_to_be_removed.append(i)
+            if cv2.contourArea(cnt) < 10:
+                items_to_be_removed.append(i)
+            else:
+                if hierarchy[0][i][3] == -1 and hierarchy[0][i][2] == -1:
+                #if hierarchy[0][i][3] == -1:
+                    # print('remove ready' + str(i))
+                    # if cv2.contourArea(cnt)*500 < cnt_areas_sort[0]:
+                    if cv2.contourArea(cnt) * 500 < cnt_areas_sort[0]:
+                        print('removed' + str(i))
+                        items_to_be_removed.append(i)
 #[a,b,c,d,e,f]#[1,2,4]
 #[a,c,d,e,f]#[1,1,4]
 #[a,d,e,f]
@@ -133,10 +137,11 @@ def remove_small_contous(img):
                 pass
 
         mask = np.zeros_like(img)
-        cv2.drawContours(mask, contours, -1, (255, 255, 255), -1)
-        # mask_resized = cv2.resize(mask, (500, 500))
+        if(len(contours)>0):
+            cv2.drawContours(mask, contours, -1, (255, 255, 255), -1)
+        mask_resized = cv2.resize(mask, (500, 500))
         # cv2.imshow("image after small patch removal", mask_resized)
-        cv2.waitKey()
+        # cv2.waitKey()
 
         return mask
 
@@ -149,7 +154,7 @@ def write_to_csv(path,fieldnames,data):
 ####new approach
 
 def unique_count(a):
-    img = cv2.resize(a, (500, 500))
+    img = cv2.resize(a, (700, 700))
 
     kernel = np.ones((3, 3), np.uint8)
     opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
@@ -160,6 +165,8 @@ def unique_count(a):
 
     img2 = cv2.pyrMeanShiftFiltering(opening, spatialRad, colorRad)
     img_lab = cv2.cvtColor(img2.astype(np.float32) / 255, cv2.COLOR_RGB2Lab)
+    # cv2.imshow('mean',img2)
+    # cv2.waitKey()
     sorted_colors = []
     sorted_count = []
     colors, count = np.unique(img_lab.reshape(-1,a.shape[-1]), axis=0, return_counts=True)
@@ -179,7 +186,7 @@ def unique_count(a):
             for index2,color2 in enumerate(sorted_colors):
                 if (index1 != index2):
                     delta_E = np.sqrt(np.sum((color - color2) ** 2, axis=-1)) / 255.
-                    delta_E = round(delta_E * 100, 2)
+                    delta_E = round(delta_E * 100, 10)
 
                     if(delta_E<5):
                         color_check[index2] = -1
@@ -205,19 +212,24 @@ def get_most_matching(color1,clr_list):
                 matching = clr
                 index = i
     return matching,index
+def refine_mask(mask):
 
-def fill_colors(img,img_mask,colors,x, y, w, h ):
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
+    for c in contours:
+        cv2.drawContours(mask, c, -1, [0, 0, 0], 5)
+    return mask
+
+def fill_colors(img,img_mask,colors):
     print('Segmenting main colors....')
-    imgray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
-    ret, thresh = cv2.threshold(imgray, 127, 255, 0)
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
+    # imgray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
+    # ret, thresh = cv2.threshold(imgray, 127, 255, 0)
+    contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
 
     mask2 = img_mask.copy()
 
-
     boxes = []
     for c in contours:
-        cv2.drawContours(mask2, c, -1, [0, 0, 0], 10)
+        cv2.drawContours(mask2, c, -1, [0, 0, 0], 3)
         (x, y, w, h) = cv2.boundingRect(c)
         boxes.append([x, y, x + w, y + h])
 
@@ -233,7 +245,7 @@ def fill_colors(img,img_mask,colors,x, y, w, h ):
 
     for h1 in range(top,bottom):
         for w1 in range(left,right):
-            new_clr, index = get_most_matching(img[h1][w1], colors)
+            # new_clr, index = get_most_matching(img[h1][w1], colors)
             # img[h1][w1] = new_clr
             # # print(new_clr)
             # mask_ls[index][h1][w1] = [255, 255, 255]
@@ -242,15 +254,20 @@ def fill_colors(img,img_mask,colors,x, y, w, h ):
                 img[h1][w1] = [0,0,0]
             else:
                 new_clr,index = get_most_matching(img[h1][w1],colors)
-                # print(img[h1][w1])
-                if (np.array_equiv(new_clr,np.array([0,0,0]))):
-                    if(mask2[h1][w1] == [0]).any() :
-                        pass
-                    else:
-                        mask_ls[index][h1][w1] = [255, 255, 255]
+                if(mask2[h1][w1] == [0]).any() :
+                    pass
                 else:
-                    # print('front')
                     mask_ls[index][h1][w1] = [255, 255, 255]
+
+                # print(img[h1][w1])
+                # if (np.array_equiv(new_clr,np.array([0,0,0]))):
+                #     if(mask2[h1][w1] == [0]).any() :
+                #         pass
+                #     else:
+                #         mask_ls[index][h1][w1] = [255, 255, 255]
+                # else:
+                #     # print('front')
+                #     mask_ls[index][h1][w1] = [255, 255, 255]
                 img[h1][w1] = new_clr
 
     return img,mask_ls
@@ -276,8 +293,14 @@ def doSegmentation():
     width_1, height_1, depth_1 = img_mask.shape
     ratio = 0.5
     img_mask = cv2.resize(img_mask, (int(height_1 * ratio), int(width_1 * ratio)))
-    x, y, w, h = get_dim(img_mask)
-
+    # x, y, w, h = get_dim(img_mask)
+    img_mask_gray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(img_mask_gray, 127, 255, 0)
+    img_mask = remove_small_contous(thresh)
+    # cv2.imshow('img mask',img_mask)
+    img_mask = refine_mask(img_mask)
+    # cv2.imshow('refined_img mask', img_mask)
+    cv2.waitKey()
     img = cv2.imread(img_path)
     img_original = img.copy()
 
@@ -324,19 +347,19 @@ def doSegmentation():
     img_lab = cv2.cvtColor(img.astype(np.float32) / 255, cv2.COLOR_RGB2Lab)
     img_lab = cv2.resize(img_lab, (int(height_1 * ratio), int(width_1 * ratio)))
 
-    new_img, masks = fill_colors(img_lab, img_mask, clr_lst, x, y, w, h)
+    new_img, masks = fill_colors(img_lab, img_mask, clr_lst)
     print('main color segmentationg complete..')
-    new_img = cv2.cvtColor(new_img, cv2.COLOR_Lab2BGR)
-    new_img = cv2.resize(new_img, (height_1, width_1))
-    median = cv2.medianBlur(new_img, 5)
+    # new_img = cv2.cvtColor(new_img, cv2.COLOR_Lab2BGR)
+    # new_img = cv2.resize(new_img, (height_1, width_1))
+    # median = cv2.medianBlur(new_img, 5)
 
 
     new_masks = []
     for i,mask in enumerate(masks):
         mask = cv2.resize(mask, (height_1, width_1))
         mask_show = cv2.resize(mask, (500, 500))
-        cv2.imshow('mask', mask_show)
-        cv2.waitKey()
+        # cv2.imshow('mask', mask_show)
+        # cv2.waitKey()
         out = np.zeros_like(img_original)  # Extract out the object and place into output image
         out[mask == 255] = img_original[mask == 255]
         out_image_path = os.path.join(main_color_path, 'color_' + str(i) + ".jpg")
