@@ -477,8 +477,7 @@ class BRModule():
         self.mask[newmask == 0] = 0
         self.mask[newmask == 255] = 1            
 
-        # Image.fromarray(self.mask).save(maskName)
-        cv.imwrite(maskName,img)
+        Image.fromarray(self.mask).save(maskName)
 
     def generateOutputPath(self,outerRemovedOutPath,type):
         
