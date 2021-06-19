@@ -17,7 +17,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
         print(nm_test_loc)
 
         defect_count = 0
-
+        ok_to_continue = 0
         if no_of_nonmatching_ref_segs != 0 and no_of_test_conflict_segs == 0:
                 print("Missing segment in test artwork")
                 for segf in nmr_file_list:
@@ -32,8 +32,9 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 def_seg_disp = cv2.resize(def_seg, (1200,900))
                                 #--------------------------
                                 # common_def_image = mark_defect(common_def_image, cv2.bitwise_not(def_seg_thresh))
-                                def_seg_nzm = np.argwhere(def_seg_thresh)
-
+                                def_seg_nzm = np.argwhere(def_seg)
+                                print(def_seg)
+                                print("Def seg nzm ",def_seg_nzm)
                                 ref_artwork_list = os.listdir(ref_artwork_loc)
                                 ref_image = cv2.imread(ref_artwork_loc + ref_artwork_list[0])
 
@@ -390,7 +391,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                 else:
                                         #Detect and Compare Rotation
                                         rotation_measure = detect_rotation(moments)
-                                        rotation_deviation = abs(ref_features[i][5] - rotation_measure)/(1+ ref_features[i][5] + rotation_measure)
+                                        rotation_deviation = abs((ref_features[i][5] - rotation_measure)/(1+ ref_features[i][5] + rotation_measure))
                                         print("Rotation Deviation : ", rotation_deviation)
                                         Tr = 0.34
 
@@ -424,11 +425,13 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 test_or_list = os.listdir(test_or_cloth_loc)
                                                 test_img_or = cv2.imread(test_or_cloth_loc + test_or_list[0])
                                                 testseg_placement_measures = detect_placement(moments,test_seg_center, test_img_or)
-                                                angle_deviation = ((ref_features[i][6][1]-testseg_placement_measures[1])**2)/ref_features[i][6][1]
-                                                distance_deviation = ((ref_features[i][6][0] - testseg_placement_measures[0])**2)/ref_features[i][6][0]
+                                                # angle_deviation = ((ref_features[i][6][1]-testseg_placement_measures[1])**2)/ref_features[i][6][1]
+                                                angle_deviation = ((ref_features[i][6][1] - testseg_placement_measures[1])) / ref_features[i][6][1]
+                                                # distance_deviation = ((ref_features[i][6][0] - testseg_placement_measures[0])**2)/ref_features[i][6][0]
+                                                distance_deviation = ((ref_features[i][6][0] -testseg_placement_measures[0])) /ref_features[i][6][0]
                                                 total_deviation = np.sqrt(abs(angle_deviation - distance_deviation))
                                                 print("Placement Deviation Measure : " ,total_deviation)
-                                                Tp = 0.3
+                                                Tp = 1.5
 
                                                 if total_deviation >= Tp:
                                                         placement_defect = {
@@ -850,7 +853,7 @@ def detect_placement(moments, garment_center, outer_removed_seg):
 
         #Find garment center 2
         # ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         # ctrs_len = []
         ctrs_len = []

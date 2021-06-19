@@ -431,7 +431,7 @@ def detectRefFeatures():
 
 
 def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs):
-    common_def = qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
+    common_def, ok_to_continue = qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
                       no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
                       nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc)
@@ -469,11 +469,11 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     # detectAndCompare_button.grid(row=0, column=1, padx=150)
 
 
-    refimglist = os.listdir("./Assets/BR_Module/Output/ref/isolated_artwork/")
+    refimglist = os.listdir(ref_artwork_loc)
     print(refimglist)
     # if refimglist != []:
 
-    ref_artwork_img = cv2.imread("./Assets/BR_Module/Output/ref/isolated_artwork/" + refimglist[0])
+    ref_artwork_img = cv2.imread(ref_artwork_loc + refimglist[0])
     img_dims = ref_artwork_img.shape
     ref_artwork_img_saved = cv2.imwrite("./Assets/QA_Module/Output/ref_artwork/ref.jpg",cv2.resize(ref_artwork_img[int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
 
