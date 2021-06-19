@@ -113,7 +113,7 @@ def remove_small_contous(img):
         print(cnt_areas_sort )
         items_to_be_removed = []
         for i, cnt in enumerate(contours):
-            if cv2.contourArea(cnt) < 10:
+            if cv2.contourArea(cnt) < 130:
                 items_to_be_removed.append(i)
             else:
                 if hierarchy[0][i][3] == -1 and hierarchy[0][i][2] == -1:
@@ -216,7 +216,7 @@ def refine_mask(mask):
 
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
     for c in contours:
-        cv2.drawContours(mask, c, -1, [0, 0, 0], 5)
+        cv2.drawContours(mask, c, -1, [0, 0, 0], 1)
     return mask
 
 def fill_colors(img,img_mask,colors):

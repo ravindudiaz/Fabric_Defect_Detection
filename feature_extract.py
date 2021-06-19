@@ -71,8 +71,8 @@ class FeatureExtract():
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
             except:
-                cv2.imshow('gray', blur)
-                cv2.imshow('thresh', th3)
+                # cv2.imshow('gray', blur)
+                # cv2.imshow('thresh', th3)
                 cv2.waitKey()
 
 

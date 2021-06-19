@@ -356,13 +356,13 @@ def matchShape(reference_csv,ref_id,defect_csv,defect_id):
     ref_segment = cv2.imread(ref_path)
     ref_segment = cv2.cvtColor(ref_segment, cv2.COLOR_BGR2GRAY)
     ret, ref_segment = cv2.threshold(ref_segment, 127, 255, 0)
-    im,ref_segment_contours, hierarchy = cv2.findContours(ref_segment, 2,1)
+    ref_segment_contours, hierarchy = cv2.findContours(ref_segment, 2,1)
 
 
     defect_segment = cv2.imread(defect_path)
     defect_segment = cv2.cvtColor(defect_segment, cv2.COLOR_BGR2GRAY)
     ret, defect_segment = cv2.threshold(defect_segment, 127, 255, 0)
-    im,defect_segment_contours, hierarchy = cv2.findContours(defect_segment, 2,1)
+    defect_segment_contours, hierarchy = cv2.findContours(defect_segment, 2,1)
 
 
     match_ratio = cv2.matchShapes(ref_segment_contours[0],defect_segment_contours[0], 1, 0.0)
