@@ -69,7 +69,7 @@ test_img_thumb = 'Assets/src/test_img_thumb.jpg'
 
 tex_sample_img_thumb = 'Assets/src/textured_sample_thumb.jpg'
 
-resizeVals = (200, 200)
+resizeVals = (250, 300)
 
 
 def getRef():

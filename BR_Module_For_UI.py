@@ -10,7 +10,7 @@ class BRModule():
 
     #Global variables
 
-    rect = 0
+    rect = (0,0,0,0)
     resizeMark = 1800
     resizeMarkMask = 500
     resizerVal = 0
