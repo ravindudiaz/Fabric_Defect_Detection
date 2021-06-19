@@ -6,65 +6,6 @@ from matplotlib import pyplot as plt
 import os
 import json
 
-# matching_ref_loc ="./Assets/Seg_Module/Output/tex_girlpig/defect_1/matching_segments/reference/"
-# matching_test_loc = "./Assets/Seg_Module/Output/tex_girlpig/defect_1/matching_segments/defect/"
-# nonmatching_ref_loc = "./Assets/Seg_Module/Output/tex_girlpig/defect_1/none_matching_segments/reference/"
-# nonmatching_test_loc = "./Assets/Seg_Module/Output/tex_girlpig/defect_1/none_matching_segments/test/"
-# nonmatching_ref_conflict = "./Assets/Seg_Module/Output/tex_girlpig/defect_1/conflict/ref/"
-# nonmatching_test_conflict = "./Assets/Seg_Module/Output/tex_girlpig/defect_1/conflict/test/"
-
-# #ref artwork & cloth loc
-# ref_artwork_mask_loc = "./Assets/BR_Module/Output/mask/ref/artwork/"
-# ref_or_cloth_loc = "./Assets/BR_Module/Output/mask/ref/cloth/"  #outer removed
-# ref_or_cloth_loc = "./Assets/BR_Module/Output/tex_rainbow.jpg"
-#
-# #test artwork &cloth loc
-# test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
-# test_or_cloth_loc = "Assets/BR_Module/Output/mask/test/cloth/"  #outer removed
-#
-# #ref isolated artwork loc
-# ref_artwork_loc = "./Assets/BR_Module/Output/ref/isolated_artwork/"
-#
-# #might need to be adjusted as per segment rois
-# ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
-# test_seg_roi_loc = "./Assets/QA_Module/Output/rois"
-#
-# # matching_ref
-# mr_file_list = os.listdir(matching_ref_loc)
-# no_of_matching_ref_segs = len(mr_file_list)
-#
-# #matching_test
-# mt_file_list = os.listdir(matching_test_loc)
-# no_of_matching_test_segs = len(mt_file_list)
-#
-# #nonmatching_ref
-# if os.path.exists(nonmatching_ref_loc):
-#         nmr_file_list = os.listdir(nonmatching_ref_loc)
-#         no_of_nonmatching_ref_segs = len(nmr_file_list)
-# else:
-#         no_of_nonmatching_ref_segs = 0
-#
-# #non_matching_test
-# if os.path.exists(nonmatching_test_loc):
-#         nmt_file_list = os.listdir(nonmatching_test_loc)
-#         no_of_nonmatching_test_segs = len(nmt_file_list)
-# else:
-#         no_of_nonmatching_test_segs = 0
-#
-#
-# #non_matching_ref_conflict
-# if os.path.exists(nonmatching_ref_conflict):
-#         nmr_conflict_file_list = os.listdir(nonmatching_ref_conflict)
-#         no_of_ref_conflict_segs = len(nmr_conflict_file_list)
-# else:
-#         no_of_ref_conflict_segs = 0
-#
-# #non_matching_test_conflict
-# if os.path.exists(nonmatching_test_conflict):
-#         nmt_conflict_file_list = os.listdir(nonmatching_test_conflict)
-#         no_of_test_conflict_segs = len(nmt_conflict_file_list)
-# else:
-#         no_of_test_conflict_segs = 0
 
 
 def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatching_ref_segs, no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
@@ -74,6 +15,9 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
         common_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])  # Add the test segment location path here ----------------------------------------------------------------
         print("Conflict Segment Matching Started...........................................................")
         print(nm_test_loc)
+
+        defect_count = 0
+
         if no_of_nonmatching_ref_segs != 0 and no_of_test_conflict_segs == 0:
                 print("Missing segment in test artwork")
                 for segf in nmr_file_list:
@@ -88,8 +32,17 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 def_seg_disp = cv2.resize(def_seg, (1200,900))
                                 #--------------------------
                                 # common_def_image = mark_defect(common_def_image, cv2.bitwise_not(def_seg_thresh))
+                                def_seg_nzm = np.argwhere(def_seg_thresh)
+
+                                ref_artwork_list = os.listdir(ref_artwork_loc)
+                                ref_image = cv2.imread(ref_artwork_loc + ref_artwork_list[0])
+
+                                for pos in def_seg_nzm:
+                                        common_def_image[pos[0]][pos[1]] = ref_image[pos[0]][pos[1]]
+
                                 #--------------------------
-                                cv2.imshow("Missing segments", common_def_image)
+                                defect_count = defect_count + 1
+                                cv2.imshow("Missing segment", common_def_image)
                                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
         elif no_of_nonmatching_test_segs != 0:
@@ -144,8 +97,9 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 mean_deviation_measure = abs(segf_mean - comp_image_mean)/segf_mean
                                 print("Mean deviation measure ", mean_deviation_measure)
 
-                                if mean_deviation_measure >= 0.07:
+                                if mean_deviation_measure >= 0.08:
                                         print("Color patch detected...")
+                                        defect_count = defect_count+1
                                         for pos in def_seg_nz:
                                                 common_def_image[pos[0]][pos[1]] = [0,255,0]
                                         for pos in def_seg_nz:
@@ -156,6 +110,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                         cv2.waitKey(0)
                                 else:
                                         print("Damaged Printwork detected...")
+                                        defect_count = defect_count+1
                                         for pos in def_seg_nz:
                                                 common_def_image[pos[0]][pos[1]] = [0,255,0]
                                         common_def_disp = cv2.resize(common_def_image, (900, 1200))
@@ -228,7 +183,9 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                         cv2.imwrite(matching_test_loc+"M_"+str(curr_files), tc_segs[best_match])
                         os.remove(nonmatching_test_conflict + "C_" + str(i) + str(x))
         print("Conflict Segment Matching Done...............................................")
-        return common_def_image
+        if defect_count ==0:
+                ok_to_continue = 1
+        return common_def_image, ok_to_continue
 
 
 
@@ -314,7 +271,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
         test_artwork_list = os.listdir(test_artwork_loc)
 
         common_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])  # Add the test segment location path here ----------------------------------------------------------------
-        common_def_image = common_def.copy()
+        # common_def_image = common_def.copy()
 
         shape_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
         size_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])
@@ -514,9 +471,9 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 # cv2.drawContours(disp_img_minmax, defected_contours, -1,
                                                                 #                  (0, 255, 0), cv2.FILLED)
 
-                                                                for ct in defected_contours:
-                                                                        xd, yd, wd, hd = cv2.boundingRect(ct)
-                                                                        cv2.rectangle(minmax_def_image, (xd+test_translate[2]-10 ,yd+test_translate[0]-10), (xd+wd+test_translate[2]+10,yd+hd+test_translate[0]+10), (0,0,255),3)
+                                                                # for ct in defected_contours:
+                                                                #         xd, yd, wd, hd = cv2.boundingRect(ct)
+                                                                #         cv2.rectangle(minmax_def_image, (xd+test_translate[2]-10 ,yd+test_translate[0]-10), (xd+wd+test_translate[2]+10,yd+hd+test_translate[0]+10), (0,0,255),3)
 
                                                                 print("Prepdiff shape ", prep_diff.shape)
                                                                 # cv2.imshow("prepdiff from dnm", prep_diff) -------------
@@ -539,7 +496,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                                                 for px_pos in new_pos:
                                                                         common_def_image[px_pos[0]][px_pos[1]] = [0,0,255]
-                                                                        # minmax_def_image[px_pos[0]][px_pos[1]] = [0,0,255]
+                                                                        minmax_def_image[px_pos[0]][px_pos[1]] = [0,0,255]
 
                                                                 def_dict["boundary"] = minmax_def_image
 
@@ -677,8 +634,8 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
         rcrop_seg = cv2.merge((rcrop_seg, rcrop_seg, rcrop_seg))
         tcrop_seg = cv2.merge((tcrop_seg, tcrop_seg, tcrop_seg))
 
-        prepr_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
-        prept_diff = np.zeros((rcrop_seg.shape[0] + 20, rcrop_seg.shape[1] + 20, 3), np.uint8) * 255
+        prepr_diff = np.zeros((rcrop_seg.shape[0] + 60, rcrop_seg.shape[1] + 60, 3), np.uint8) * 255
+        prept_diff = np.zeros((rcrop_seg.shape[0] + 60, rcrop_seg.shape[1] + 60, 3), np.uint8) * 255
 
         prepr_diff[0:rcrop_seg.shape[0], 0:rcrop_seg.shape[1]] = rcrop_seg
         prept_diff[0:tcrop_seg.shape[0], 0:tcrop_seg.shape[1]] = tcrop_seg

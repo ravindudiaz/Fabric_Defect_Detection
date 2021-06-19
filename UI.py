@@ -23,22 +23,23 @@ nonmatching_test_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments
 
 #ref artwork & cloth loc
 ref_artwork_mask_loc = "./Assets/BR_Module/Output/mask/ref/artwork/"
-ref_or_cloth_loc = "./Assets/BR_Module/Output/ref/outer_removed_ref/"  #outer removed ref
+ref_or_cloth_loc = "./Assets/BR_Module/Output/outer_removed_ref/"  #outer removed ref
 
 #test artwork &cloth loc
 test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
-test_or_cloth_loc = "Assets/BR_Module/Output/test/outer_removed_test/"  #outer removed test
+test_or_cloth_loc = "Assets/BR_Module/Output/outer_removed_test/"  #outer removed test
 
 #ref isolated artwork loc
 ref_artwork_loc = "./Assets/BR_Module/Output/artworks_ref/"
 
 #test isolated artwork loc
-test_artwork_loc = "./Assets/BR_Module/Output/test/artworks_test/"
+test_artwork_loc = "./Assets/BR_Module/Output/artworks_test/"
 
 
 #might need to be adjusted as per segment rois
 ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
 test_seg_roi_loc = "./Assets/QA_Module/Output/rois"
+
 
 
 #reference vars
