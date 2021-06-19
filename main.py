@@ -8,10 +8,12 @@ def print_hi(name):
 if __name__ == '__main__':
     print_hi('FYP - CV Based Defect Detection of Printed Embossed Fabrics')
 
-exec(open('BR_Module.py').read())
+# exec(open('BR_Module.py').read())
 # exec(open('Seg_Module.py').read())
 # exec(open('QA_Module.py').read())
 
+
+exec(open('UI.py').read())
 # //Folder Structure
 #
 # “Assets” folder---->
