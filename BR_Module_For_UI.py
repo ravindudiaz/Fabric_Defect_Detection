@@ -11,7 +11,7 @@ class BRModule():
     #Global variables
 
     rect = (0,0,0,0)
-    resizeMark = 1900
+    resizeMark = 2000
     resizeMarkMask = 500
     resizerVal = 0
     originalWidth = 0
