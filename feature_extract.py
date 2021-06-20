@@ -16,7 +16,7 @@ class FeatureExtract():
         #self.img_name = img_name
 
 
-        self.ref_path = os.path.join(dir, 'segments')
+        self.ref_path = os.path.join(dir, 'masks')
         self.ref_csv_path = os.path.join(dir, 'features.csv')
         self.ref_colors_csv_path = os.path.join(dir, 'color.csv')
 
@@ -71,8 +71,8 @@ class FeatureExtract():
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
             except:
-                # cv2.imshow('gray', blur)
-                # cv2.imshow('thresh', th3)
+                cv2.imshow('gray', blur)
+                cv2.imshow('thresh', th3)
                 cv2.waitKey()
 
 
