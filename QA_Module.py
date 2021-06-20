@@ -693,34 +693,39 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
 
 #Extra Operator-----------------------------------------------------------------------------------------------------------------
         ult_ctrs = []
-        # for a in range(len(cont_arr)):
-        #         if(len(cont_arr) != 1 or len(cont_arr) != 0):
-        #                 for c in range(len(cont_arr[a]) - 1):
-        #                         for j in range(-2,3):
-        #                                 for k in range(-2,3):
-        #                                         pt = cont_arr[a][c].flatten()
-        #                                         if thresh_gdiff[pt[0]+j][pt[1]+k] == 255:
-        #                                                 if a+1 != (len(cont_arr) - 1):
-        #                                                         if [[pt[0]+j,pt[1]+k]] in cont_arr[a+1]:
-        #                                                                 ult_ctrs.append([cont_arr[a] ,cont_arr[a+1]])
-        #         else:
-        #                 ult_ctrs.append([cont_arr[a]])
-        #
-        # def_ult_contours = []
-        # for u in ult_ctrs:
-        #         if len(u) != 1:
-        #                 ctr_area = cv2.contourArea(u[0]) + cv2.contourArea(u[1])
-        #         else:
-        #                 ctr_area = cv2.contourArea(u[0])
-        #         if ctr_area/segmentArea >= 0.008:
-        #                 def_ult_contours.append(u)
+        print("def_contours :",len(cont_arr))
+        for a in range(len(cont_arr)):
+                # print("a = ",a)
+                if(len(cont_arr) != 1 or len(cont_arr) != 0):
+                        for c in range(len(cont_arr[a]) - 1):
+                                for j in range(-3,3):
+                                        for k in range(-3,3):
+                                                pt = cont_arr[a][c].flatten()
+                                                # print("traversing throuh ", [pt[0]+j, pt[1]+k])
+                                                if thresh_gdiff[pt[0]+j][pt[1]+k] == 255:
+                                                        # if a+1 != (len(cont_arr) - 1):
+                                                        if a + 1 != (len(cont_arr)):
+                                                                # print("hit ",k)
+                                                                if [[pt[0]+j,pt[1]+k]] in cont_arr[a+1]:
+                                                                        ult_ctrs.append([cont_arr[a] ,cont_arr[a+1]])
+                else:
+                        ult_ctrs.append([cont_arr[a]])
+
+        def_ult_contours = []
+        for u in ult_ctrs:
+                if len(u) != 1:
+                        ctr_area = cv2.contourArea(u[0]) + cv2.contourArea(u[1])
+                else:
+                        ctr_area = cv2.contourArea(u[0])
+                if ctr_area/segmentArea >= 0.008:
+                        def_ult_contours.append(u)
 #Extra Operator End--------------------------------------------------------------------------------------------------------------
 
         def_contours = []
         for cnt in cont_arr:
                 cnt_area = cv2.contourArea(cnt)
                 area_percentage = cnt_area/segmentArea
-                if area_percentage >= 0.0053 :
+                if area_percentage >= 0.007 :
                         def_contours.append(cnt)
                         print("area% ", area_percentage)
 
