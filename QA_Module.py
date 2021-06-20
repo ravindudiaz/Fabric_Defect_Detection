@@ -43,9 +43,11 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 for pos in def_seg_nzm:
                                         common_def_image[pos[0]][pos[1]] = ref_image[pos[0]][pos[1]]
 
+                                common_def_disp = cv2.resize(common_def_image[int(img_dims[0] / 10):int(img_dims[0] * 9 / 10), 0:img_dims[1]], (750, 800))
+
                                 #--------------------------
                                 defect_count = defect_count + 1
-                                cv2.imshow("Missing segment detected!", common_def_image)
+                                cv2.imshow("Missing segment detected!", common_def_disp)
                                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
         elif no_of_nonmatching_test_segs != 0:
@@ -439,6 +441,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 test_or_list = os.listdir(test_or_cloth_loc)
                                                 test_img_or = cv2.imread(test_or_cloth_loc + test_or_list[0])
                                                 testseg_placement_measures = detect_placement(moments,test_seg_center, test_img_or)
+                                                print("Segment placement measures :", testseg_placement_measures)
                                                 # angle_deviation = ((ref_features[i][6][1]-testseg_placement_measures[1])**2)/ref_features[i][6][1]
                                                 angle_deviation = ((ref_features[i][6][1] - testseg_placement_measures[1])) / ref_features[i][6][1]
                                                 # distance_deviation = ((ref_features[i][6][0] - testseg_placement_measures[0])**2)/ref_features[i][6][0]
@@ -519,7 +522,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
 
                                                                 minmax_def_disp = cv2.resize(minmax_def_image, (750,1000))
 
-                                                                boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",minmax_def_disp)
+                                                                # boundary_saved = cv2.imwrite("./Assets/QA_Module/Output/Boundary/boundary.jpg",minmax_def_disp)
                                                                 cv2.imshow("Minmax Defect View"+str(i), minmax_def_disp)
                                                                 cv2.waitKey(0)
                                                                 cv2.destroyAllWindows()
@@ -533,7 +536,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 ret1, gr_test_seg_thresh = cv2.threshold(gr_test_seg, 5, 255, cv2.THRESH_BINARY)
                                                                 # cv2.imshow("thresholded seg", gr_test_seg_thresh)
                                                                 cv2.waitKey(0)
-                                                                test_seg_color_measures = detect_color(test_seg, gr_test_seg_thresh, "test",i)
+                                                                test_seg_color_measures = detect_color(test_seg, gr_test_seg_thresh, "test", i)
                                                                 # print(test_seg_color_measures)
                                                                 all_roi_deviations = []
                                                                 seg_color_measures = ref_features[i][7]
@@ -639,7 +642,7 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
         # cv2.waitKey(0)
         # cv2.imshow("Diff Image ", diff_image)
         # cv2.waitKey(0)
-        gauss_diff = cv2.GaussianBlur(diff_image,(3,3), cv2.BORDER_DEFAULT)
+        gauss_diff = cv2.GaussianBlur(diff_image,(5,5), cv2.BORDER_DEFAULT)
         # cv2.imshow("Gauss Diff Image ", gauss_diff)
         # cv2.waitKey(0)
 
@@ -725,7 +728,7 @@ def detMinMax2(ref_thresh_segs, tseg_thresh, ref_dimensions, segmentArea, n):
         for cnt in cont_arr:
                 cnt_area = cv2.contourArea(cnt)
                 area_percentage = cnt_area/segmentArea
-                if area_percentage >= 0.007 :
+                if area_percentage >= 0.01 :
                         def_contours.append(cnt)
                         print("area% ", area_percentage)
 
@@ -980,7 +983,6 @@ def detect_color(segment, thresholded_segment, reftest, i):
                         max_x = non_zero_indexes[i][1]
         print(min_x , max_x, min_y, max_y)
 
-
         segment_section = segment[min_y:max_y, min_x:max_x]
 
         #Converting segment section color to hsv
@@ -1009,16 +1011,18 @@ def detect_color(segment, thresholded_segment, reftest, i):
                 roi_nz = np.argwhere(rois[j])
                 num_nz = len(roi_nz)
 
+                # color_vals = []
+
+                # for pt in roi_nz:
+                #         ptf = pt.flatten()
+                #         color_vals.append(rois[j][ptf[0]][ptf[1]])
+                # print(j," ", color_vals)
+
                 #Splitting into Color Channels
                 channels = cv2.split(rois[j])
 
-                # channels_arranged = []
-
-                # for ch in channels:
-                #         ch_arr = []
-                #         for pt in roi_nz:
-                #                 ch_arr.append(ch[pt.flatten()[0]][pt.flatten()[1]])
-                #         channels_arranged.append(ch_arr)
+                roi_shape = rois[j].shape
+                num_roi_px = roi_shape[0]*roi_shape[1]
 
                 # print(channels)
                 roi_measures = []
@@ -1028,15 +1032,23 @@ def detect_color(segment, thresholded_segment, reftest, i):
                         sorted_channel = np.sort(channels[i])
                         color_median = np.median(sorted_channel)
 
-                        #Color channel Standard Deviation
-                        color_std_dev = np.std(channels[i])
+                        # #Color channel Standard Deviation
+                        # color_std_dev = np.std(channels[i])
 
 
                         # color_mean = np.mean(channels[i])
                         color_mean = np.sum(channels[i]) / num_nz
 
+                        #color_variance
+                        func_mean = np.mean(channels[i])
+                        func_variance = np.var(channels[i])
+                        color_variance = (num_roi_px * func_variance - (num_roi_px - num_nz)* (func_mean**2))/num_nz
+
+                        #Color standard deviation
+                        color_std_dev = np.sqrt(color_variance)
+
                         color_skewness = 3*(color_mean-color_median)/color_std_dev
-                        color_variance = np.var(channels[i])
+
                         channel_measures.append([color_mean, color_variance,color_skewness])
                         # print(channel_measures)
                         roi_measures.append(channel_measures)
