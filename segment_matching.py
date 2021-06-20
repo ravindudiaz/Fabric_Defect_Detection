@@ -83,7 +83,7 @@ def doSegmentMatching(reference_csv,defect_csv):
     # print(referece_features)
     # print(defect_features)
 
-    def rgb_dif(clr1, clr2)->list:
+    def rgb_dif(clr1, clr2):
 
         delta_E = np.sqrt(np.sum((clr1 - clr2) ** 2, axis=-1)) / 255.
         return (round(delta_E*100,2))

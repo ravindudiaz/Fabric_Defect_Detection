@@ -15,6 +15,7 @@ main_color_path = ""
 segment_path = ""
 mask_path = ""
 isReference = False
+isTextured = False
 
 def setFolderNames( work_path, sub_folder_name):
     global new_dir,main_color_path,segment_path,img_path
@@ -27,10 +28,16 @@ def setFolderNames( work_path, sub_folder_name):
 
 
 def setFolderNames_reference():
-    global new_dir, main_color_path, segment_path, img_path,mask_path, isReference,img_mask_path
+    global new_dir, main_color_path, segment_path, img_path,mask_path, isReference,img_mask_path,isTextured
 
     for dirpath, dirnames, filenames in os.walk('Assets/BR_Module/Output/artworks_ref'):
         for file in filenames:
+            if 'uni_' in file:
+                isTextured = False
+                print('image is uniform')
+            else:
+                isTextured = True
+                print('image is textured')
             file_path = os.path.join(dirpath,file)
             img_path = file_path
 
@@ -50,10 +57,16 @@ def setFolderNames_reference():
 
 
 def setFolderNames_defect():
-    global new_dir, main_color_path, segment_path, img_path,mask_path,isReference,img_mask_path
+    global new_dir, main_color_path, segment_path, img_path,mask_path,isReference,img_mask_path,isTextured
 
     for dirpath, dirnames, filenames in os.walk('Assets/BR_Module/Output/artworks_test'):
         for file in filenames:
+            if 'uni_' in file:
+                isTextured = False
+                print('image is uniform')
+            else:
+                isTextured = True
+                print('image is textured')
             file_path = os.path.join(dirpath, file)
             img_path = file_path
 
@@ -216,20 +229,25 @@ def refine_mask(mask):
 
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
     for c in contours:
-        cv2.drawContours(mask, c, -1, [0, 0, 0], 1)
+        cv2.drawContours(mask, c, -1, [0, 0, 0], 2)
     return mask
 
 def fill_colors(img,img_mask,colors):
+    global isTextured
     print('Segmenting main colors....')
     # imgray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
     # ret, thresh = cv2.threshold(imgray, 127, 255, 0)
     contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
 
     mask2 = img_mask.copy()
-
+    thickness = 3
+    if isTextured:
+        thickness = 0
     boxes = []
+    print('thickness is',thickness)
+    print('isTextured: ',isTextured)
     for c in contours:
-        cv2.drawContours(mask2, c, -1, [0, 0, 0], 3)
+        cv2.drawContours(mask2, c, -1, [0, 0, 0], thickness)
         (x, y, w, h) = cv2.boundingRect(c)
         boxes.append([x, y, x + w, y + h])
 
@@ -298,9 +316,10 @@ def doSegmentation():
     ret, thresh = cv2.threshold(img_mask_gray, 127, 255, 0)
     img_mask = remove_small_contous(thresh)
     # cv2.imshow('img mask',img_mask)
-    img_mask = refine_mask(img_mask)
+    if not isTextured:
+        img_mask = refine_mask(img_mask)
     # cv2.imshow('refined_img mask', img_mask)
-    cv2.waitKey()
+    # cv2.waitKey()
     img = cv2.imread(img_path)
     img_original = img.copy()
 
