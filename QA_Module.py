@@ -5,6 +5,7 @@ import statistics as stat
 from matplotlib import pyplot as plt
 import os
 import json
+import shutil as sh
 
 
 
@@ -13,11 +14,12 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
         # To be displayed in ui
         test_artwork_list = os.listdir(test_artwork_loc)
         common_def_image = cv2.imread(test_artwork_loc + test_artwork_list[0])  # Add the test segment location path here ----------------------------------------------------------------
+        img_dims = common_def_image.shape
         print("Conflict Segment Matching Started...........................................................")
         print(nm_test_loc)
 
         defect_count = 0
-
+        ok_to_continue = 0
         if no_of_nonmatching_ref_segs != 0 and no_of_test_conflict_segs == 0:
                 print("Missing segment in test artwork")
                 for segf in nmr_file_list:
@@ -32,8 +34,9 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 def_seg_disp = cv2.resize(def_seg, (1200,900))
                                 #--------------------------
                                 # common_def_image = mark_defect(common_def_image, cv2.bitwise_not(def_seg_thresh))
-                                def_seg_nzm = np.argwhere(def_seg_thresh)
-
+                                def_seg_nzm = np.argwhere(def_seg)
+                                # print(def_seg)
+                                print("Def seg nzm ",def_seg_nzm)
                                 ref_artwork_list = os.listdir(ref_artwork_loc)
                                 ref_image = cv2.imread(ref_artwork_loc + ref_artwork_list[0])
 
@@ -42,7 +45,7 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
 
                                 #--------------------------
                                 defect_count = defect_count + 1
-                                cv2.imshow("Missing segment", common_def_image)
+                                cv2.imshow("Missing segment detected!", common_def_image)
                                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
         elif no_of_nonmatching_test_segs != 0:
@@ -78,8 +81,8 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                         comp_image[pos[0]][pos[1]] = ref_image[pos[0]][pos[1]]
 
                                 comp_disp = cv2.resize(comp_image, (900,1200))
-                                cv2.imshow("Comp_image init", comp_disp)
-                                cv2.waitKey(0)
+                                # cv2.imshow("Comp_image init", comp_disp)
+                                # cv2.waitKey(0)
 
                                 # ref_image_section = ref_image[defy_min:defy_max, defx_min:defx_max]
                                 # cv2.imshow("ref_image_section", ref_image_section)
@@ -97,29 +100,31 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
                                 mean_deviation_measure = abs(segf_mean - comp_image_mean)/segf_mean
                                 print("Mean deviation measure ", mean_deviation_measure)
 
-                                if mean_deviation_measure >= 0.08:
+                                if mean_deviation_measure >= 0.12:
                                         print("Color patch detected...")
                                         defect_count = defect_count+1
                                         for pos in def_seg_nz:
-                                                common_def_image[pos[0]][pos[1]] = [0,255,0]
+                                                common_def_image[pos[0]][pos[1]] = [200,255,0]
                                         for pos in def_seg_nz:
                                                 comp_image[pos[0]][pos[1]] = [0,255,0]
 
-                                        common_def_disp = cv2.resize(common_def_image,(900,1200))
-                                        cv2.imshow("Comp_image detected", common_def_disp)
+                                        common_def_disp = cv2.resize(common_def_image[int(img_dims[0] / 10):int(img_dims[0] * 9 / 10),0:img_dims[1]],(750,800))
+                                        cv2.imshow("Color Patch Detected!", common_def_disp)
                                         cv2.waitKey(0)
                                 else:
                                         print("Damaged Printwork detected...")
+
                                         defect_count = defect_count+1
                                         for pos in def_seg_nz:
-                                                common_def_image[pos[0]][pos[1]] = [0,255,0]
-                                        common_def_disp = cv2.resize(common_def_image, (900, 1200))
-                                        cv2.imshow("Common def image", common_def_disp)
+                                                common_def_image[pos[0]][pos[1]] = [0,255,128]
+                                        common_def_disp = cv2.resize(
+                                                common_def_image[int(img_dims[0] / 10):int(img_dims[0] * 9 / 10),0:img_dims[1]], (750, 800))
+                                        cv2.imshow("Broken printwork detected!", common_def_disp)
                                         cv2.waitKey(0)
 
                                 def_seg_disp = cv2.resize(def_seg, (900,1200))
-                                cv2.imshow(segf , def_seg)
-                                cv2.waitKey(0)
+                                # cv2.imshow(segf , def_seg)
+                                # cv2.waitKey(0)
                                 cv2.destroyAllWindows()
         elif no_of_ref_conflict_segs != 0:
                 print("Hit....................................")
@@ -193,6 +198,16 @@ def match_segments(nm_ref_loc, nm_test_loc, m_ref_loc, m_test_loc, no_of_nonmatc
 def detect_features(no_of_matching_ref_segs, ref_img_check, matching_ref_loc, matching_test_loc, ref_or_cloth_loc):
         print("Reference Image Feature Extraction Started.........................................")
 
+        refrois_path = "./Assets/QA_Module/Output/ref_rois/"
+        testrois_path = "./Assets/QA_Module/Output/test_rois/"
+
+        if os.path.exists(refrois_path):
+                sh.rmtree(refrois_path)
+                os.mkdir("./Assets/QA_Module/Output/ref_rois")
+        if os.path.exists(testrois_path):
+                sh.rmtree(testrois_path)
+                os.mkdir("./Assets/QA_Module/Output/test_rois")
+
         ref_features=[]
         thresholded_segments = []
         ref_segs = []
@@ -235,7 +250,7 @@ def detect_features(no_of_matching_ref_segs, ref_img_check, matching_ref_loc, ma
                 print(segment_placement_measures)
 
                 #Detect Color
-                segment_color_measures = detect_color(seg, thresh_seg)
+                segment_color_measures = detect_color(seg, thresh_seg, "ref", i)
 
                 #Detect Minima Maxima
                 # seg_zero_crossings, seg_point_measures = detect_minima_maxima(thresh_seg, seg)
@@ -390,7 +405,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                 else:
                                         #Detect and Compare Rotation
                                         rotation_measure = detect_rotation(moments)
-                                        rotation_deviation = abs(ref_features[i][5] - rotation_measure)/(1+ ref_features[i][5] + rotation_measure)
+                                        rotation_deviation = abs((ref_features[i][5] - rotation_measure)/(1+ ref_features[i][5] + rotation_measure))
                                         print("Rotation Deviation : ", rotation_deviation)
                                         Tr = 0.34
 
@@ -424,11 +439,13 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                 test_or_list = os.listdir(test_or_cloth_loc)
                                                 test_img_or = cv2.imread(test_or_cloth_loc + test_or_list[0])
                                                 testseg_placement_measures = detect_placement(moments,test_seg_center, test_img_or)
-                                                angle_deviation = ((ref_features[i][6][1]-testseg_placement_measures[1])**2)/ref_features[i][6][1]
-                                                distance_deviation = ((ref_features[i][6][0] - testseg_placement_measures[0])**2)/ref_features[i][6][0]
+                                                # angle_deviation = ((ref_features[i][6][1]-testseg_placement_measures[1])**2)/ref_features[i][6][1]
+                                                angle_deviation = ((ref_features[i][6][1] - testseg_placement_measures[1])) / ref_features[i][6][1]
+                                                # distance_deviation = ((ref_features[i][6][0] - testseg_placement_measures[0])**2)/ref_features[i][6][0]
+                                                distance_deviation = ((ref_features[i][6][0] -testseg_placement_measures[0])) /ref_features[i][6][0]
                                                 total_deviation = np.sqrt(abs(angle_deviation - distance_deviation))
                                                 print("Placement Deviation Measure : " ,total_deviation)
-                                                Tp = 0.3
+                                                Tp = 1.5
 
                                                 if total_deviation >= Tp:
                                                         placement_defect = {
@@ -516,7 +533,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 ret1, gr_test_seg_thresh = cv2.threshold(gr_test_seg, 5, 255, cv2.THRESH_BINARY)
                                                                 # cv2.imshow("thresholded seg", gr_test_seg_thresh)
                                                                 cv2.waitKey(0)
-                                                                test_seg_color_measures = detect_color(test_seg, gr_test_seg_thresh)
+                                                                test_seg_color_measures = detect_color(test_seg, gr_test_seg_thresh, "test",i)
                                                                 # print(test_seg_color_measures)
                                                                 all_roi_deviations = []
                                                                 seg_color_measures = ref_features[i][7]
@@ -526,9 +543,15 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                         for l in range(len(ref_features[i][7][k])):
                                                                                 rm = ref_features[i][7][k]
                                                                                 tm = test_seg_color_measures[k]
-                                                                                # channel_dev = abs(rm[l][0][0] - tm[l][0][0])**2 + abs(rm[l][0][1] - tm[l][0][1]) + abs(rm[l][0][2] - tm[l][0][2])**2
-                                                                                channel_dev = abs(rm[l][0][0] - tm[l][0][0]) + abs(rm[l][0][1] - tm[l][0][1]) + abs(rm[l][0][2] - tm[l][0][2])
+                                                                                channel_dev = abs(rm[l][0][0] - tm[l][0][0])**2 + abs(rm[l][0][1] - tm[l][0][1]) + abs(rm[l][0][2] - tm[l][0][2])**2
+                                                                                # channel_dev = abs((rm[l][0][0] - tm[l][0][0]) + (rm[l][0][1] - tm[l][0][1]) + (rm[l][0][2] - tm[l][0][2]))
+                                                                                # channel_dev = abs((rm[l][0][0] - tm[l][0][0])+(rm[l][0][1] - tm[l][0][1]))
                                                                                 channel_dev = channel_dev/ (rm[l][0][0]**2 + rm[l][0][1]**2 + rm[l][0][2]**2)
+                                                                                # channel_dev = channel_dev / (
+                                                                                #                 rm[l][0][0]  +
+                                                                                #                 rm[l][0][1]  +
+                                                                                #                 rm[l][0][2] )
+                                                                                # channel_dev = channel_dev/(rm[l][0][0]+rm[l][0][1])
                                                                                 # channel_dev = rm[l][0][0] + tm[l][0][0]
                                                                                 roi_deviations.append(channel_dev)
                                                                         # print(roi_deviations)
@@ -536,7 +559,7 @@ def detect_and_compare_matching_segments(no_of_segments,ref_features,test_img_ch
                                                                 # print(len(all_roi_deviations))
                                                                 print(all_roi_deviations)
 
-                                                                Tcol = 4.3
+                                                                Tcol = 0.13
                                                                 color_def_roi = []
                                                                 for b in range(len(all_roi_deviations)):
                                                                         for bi in range(len(all_roi_deviations[b])):
@@ -850,7 +873,7 @@ def detect_placement(moments, garment_center, outer_removed_seg):
 
         #Find garment center 2
         # ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        ctrs, h = cv2.findContours(thresh_or_seg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         # ctrs_len = []
         ctrs_len = []
@@ -930,7 +953,7 @@ def detect_placement(moments, garment_center, outer_removed_seg):
         return segment_placement_measures
 
 #Color Detection
-def detect_color(segment, thresholded_segment):
+def detect_color(segment, thresholded_segment, reftest, i):
         print("Color Detection...")
         # cv2.imshow('thresh',thresholded_segment)
         # cv2.waitKey(0)
@@ -956,7 +979,8 @@ def detect_color(segment, thresholded_segment):
         segment_section = segment[min_y:max_y, min_x:max_x]
 
         #Converting segment section color to hsv
-        seg_section_hsv = cv2.cvtColor(segment_section, cv2.COLOR_BGR2HSV)
+        # seg_section_hsv = cv2.cvtColor(segment_section, cv2.COLOR_BGR2HSV)
+        seg_section_hsv = cv2.cvtColor(segment_section, cv2.COLOR_BGR2RGB)
 
         #Splitting the image in to 4 ROI s
         seg_section_dimensions = segment_section.shape
@@ -969,9 +993,28 @@ def detect_color(segment, thresholded_segment):
 
         rois = [slice_2[0][0], slice_2[0][1], slice_2[1][0],slice_2[1][1]]
         segment_color_measures = []
+
+        for k in range(len(rois)):
+                if(reftest=="ref"):
+                        cv2.imwrite("./Assets/QA_Module/Output/ref_rois/roi_"+str(i)+"_"+str(k)+".jpg", rois[k])
+                if (reftest == "test"):
+                        cv2.imwrite("./Assets/QA_Module/Output/test_rois/roi_" + str(i) + "_" + str(k) + ".jpg", rois[k])
+
         for j in range(len(rois)):
+                roi_nz = np.argwhere(rois[j])
+                num_nz = len(roi_nz)
+
                 #Splitting into Color Channels
                 channels = cv2.split(rois[j])
+
+                # channels_arranged = []
+
+                # for ch in channels:
+                #         ch_arr = []
+                #         for pt in roi_nz:
+                #                 ch_arr.append(ch[pt.flatten()[0]][pt.flatten()[1]])
+                #         channels_arranged.append(ch_arr)
+
                 # print(channels)
                 roi_measures = []
 
@@ -979,9 +1022,14 @@ def detect_color(segment, thresholded_segment):
                         channel_measures = []
                         sorted_channel = np.sort(channels[i])
                         color_median = np.median(sorted_channel)
+
                         #Color channel Standard Deviation
                         color_std_dev = np.std(channels[i])
-                        color_mean = np.mean(channels[i])
+
+
+                        # color_mean = np.mean(channels[i])
+                        color_mean = np.sum(channels[i]) / num_nz
+
                         color_skewness = 3*(color_mean-color_median)/color_std_dev
                         color_variance = np.var(channels[i])
                         channel_measures.append([color_mean, color_variance,color_skewness])

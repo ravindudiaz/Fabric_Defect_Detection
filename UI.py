@@ -431,89 +431,90 @@ def detectRefFeatures():
 
 
 def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs):
-    common_def = qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
+    common_def, ok_to_continue = qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
                       no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
                       nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc)
 
-    shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
-        no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
-        no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc,common_def)
+    if ok_to_continue == 1:
+        shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
+            no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
+            no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc,common_def)
 
-    qa.display_arr(shape_def, "Shape")
-    qa.display_arr(size_def, "Size")
-    qa.display_arr(placement_def, "Placement")
-    qa.display_arr(rotation_def, "Rotation")
-    qa.display_arr(color_def, "Color")
-    qa.display_arr(minmax_def, "Minima Maxima")
+        qa.display_arr(shape_def, "Shape")
+        qa.display_arr(size_def, "Size")
+        qa.display_arr(placement_def, "Placement")
+        qa.display_arr(rotation_def, "Rotation")
+        qa.display_arr(color_def, "Color")
+        qa.display_arr(minmax_def, "Minima Maxima")
 
-    # messagebox.showinfo("Comparison Success!", "Comparison complete")
+        # messagebox.showinfo("Comparison Success!", "Comparison complete")
 
-    newWindow = tk.Toplevel(root)
-    newWindow.title("Defect Report")
-    newWindow.geometry("1500x1200")
-    #-----------------------------------------------------------------------
-    global frame9
-    frame9 = ttk.Frame(newWindow)
-    frame9.pack( fill=tk.BOTH,expand = 1)
+        newWindow = tk.Toplevel(root)
+        newWindow.title("Defect Report")
+        newWindow.geometry("1500x1200")
+        #-----------------------------------------------------------------------
+        global frame9
+        frame9 = ttk.Frame(newWindow)
+        frame9.pack( fill=tk.BOTH,expand = 1)
 
-    #-----------------------------------------------------------------------
+        #-----------------------------------------------------------------------
 
-    # detect_ref_features_button = ttk.Button(second_frame, text="Detect Reference Features",
-    #                                         command=lambda: detectRefFeatures())
-    # detect_ref_features_button.grid(row=0, column=0, padx=150)
-    #
-    # detectAndCompare_button = ttk.Button(second_frame, text="Detect and Compare Features",
-    #                                      command=lambda: detectAndCompare(ref_features, ref_thresholded_segs,
-    #                                                                       ref_dimensions, ref_segs))
-    # detectAndCompare_button.grid(row=0, column=1, padx=150)
+        # detect_ref_features_button = ttk.Button(second_frame, text="Detect Reference Features",
+        #                                         command=lambda: detectRefFeatures())
+        # detect_ref_features_button.grid(row=0, column=0, padx=150)
+        #
+        # detectAndCompare_button = ttk.Button(second_frame, text="Detect and Compare Features",
+        #                                      command=lambda: detectAndCompare(ref_features, ref_thresholded_segs,
+        #                                                                       ref_dimensions, ref_segs))
+        # detectAndCompare_button.grid(row=0, column=1, padx=150)
 
 
-    refimglist = os.listdir("./Assets/BR_Module/Output/ref/isolated_artwork/")
-    print(refimglist)
-    # if refimglist != []:
+        refimglist = os.listdir(ref_artwork_loc)
+        print(refimglist)
+        # if refimglist != []:
 
-    ref_artwork_img = cv2.imread("./Assets/BR_Module/Output/ref/isolated_artwork/" + refimglist[0])
-    img_dims = ref_artwork_img.shape
-    ref_artwork_img_saved = cv2.imwrite("./Assets/QA_Module/Output/ref_artwork/ref.jpg",cv2.resize(ref_artwork_img[int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+        ref_artwork_img = cv2.imread(ref_artwork_loc + refimglist[0])
+        img_dims = ref_artwork_img.shape
+        ref_artwork_img_saved = cv2.imwrite("./Assets/QA_Module/Output/ref_artwork/ref.jpg", cv2.resize(ref_artwork_img[int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
 
-    ref_artwork = Image.open("./Assets/QA_Module/Output/ref_artwork/ref.jpg")
-    ref_artwork = ref_artwork.resize((750,800),Image.ANTIALIAS)
-    ref_img_comp = ImageTk.PhotoImage(ref_artwork)
-    comp_ref_label = ttk.Label(frame9, background = 'white', image = ref_img_comp)
-    comp_ref_label.image = ref_img_comp
-    comp_ref_label.grid(row = 0, column = 0)
+        ref_artwork = Image.open("./Assets/QA_Module/Output/ref_artwork/ref.jpg")
+        ref_artwork = ref_artwork.resize((750,800),Image.ANTIALIAS)
+        ref_img_comp = ImageTk.PhotoImage(ref_artwork)
+        comp_ref_label = ttk.Label(frame9, background = 'white', image = ref_img_comp)
+        comp_ref_label.image = ref_img_comp
+        comp_ref_label.grid(row = 0, column = 0)
 
-    testimglist = os.listdir("./Assets/QA_Module/Output/Rotation/")
-    print(testimglist)
-    # if testimglist != []:
-    marked_artwork = Image.open("./Assets/QA_Module/Output/Rotation/" + testimglist[0])
-    marked_img_comp = ImageTk.PhotoImage(marked_artwork)
-    comp_test_label = ttk.Label(frame9, background='white', image=marked_img_comp)
-    comp_test_label.image = marked_img_comp
-    comp_test_label.grid(row=0, column=1)
+        testimglist = os.listdir("./Assets/QA_Module/Output/Rotation/")
+        print(testimglist)
+        # if testimglist != []:
+        marked_artwork = Image.open("./Assets/QA_Module/Output/Rotation/" + testimglist[0])
+        marked_img_comp = ImageTk.PhotoImage(marked_artwork)
+        comp_test_label = ttk.Label(frame9, background='white', image=marked_img_comp)
+        comp_test_label.image = marked_img_comp
+        comp_test_label.grid(row=0, column=1)
 
-    #Radio Buttons to show separate outputs
-    frame10 = ttk.Frame(newWindow)
-    frame10.pack(fill=tk.BOTH, expand=1, pady=20)
+        #Radio Buttons to show separate outputs
+        frame10 = ttk.Frame(newWindow)
+        frame10.pack(fill=tk.BOTH, expand=1, pady=20)
 
-    var = tk.StringVar()
-    rb1 = tk.Radiobutton(frame10, text="Shape", variable= var, value="Shape", command=lambda  :displayDefImage(var.get()))
-    rb1.grid(row=0, column=0, padx=30)
-    rb2 = tk.Radiobutton(frame10, text="Size", variable=var, value="Size", command=lambda :displayDefImage(var.get()))
-    rb2.grid(row=0, column=1, padx=30)
-    rb3 = tk.Radiobutton(frame10, text="Rotation", variable=var, value="Rotation", command=lambda: displayDefImage(var.get()))
-    rb3.grid(row=0, column=2, padx=30)
-    rb4 = tk.Radiobutton(frame10, text="Placement", variable=var, value="Placement", command=lambda: displayDefImage(var.get()))
-    rb4.grid(row=0, column=3, padx=30)
-    rb5 = tk.Radiobutton(frame10, text="Boundary", variable=var, value="Boundary", command=lambda: displayDefImage(var.get()))
-    rb5.grid(row=0, column=4, padx=30)
-    rb6 = tk.Radiobutton(frame10, text="Color", variable=var, value="Color", command=lambda: displayDefImage(var.get()))
-    rb6.grid(row=0, column=5, padx=30)
-    rb7 = tk.Radiobutton(frame10, text="Patch", variable=var, value="Patch",command=lambda: displayDefImage(var.get()))
-    rb7.grid(row=0, column=6, padx=30)
-    rb8 = tk.Radiobutton(frame10, text="Common", variable=var, value="Common", command=lambda: displayDefImage(var.get()))
-    rb8.grid(row=0, column=7, padx=30)
+        var = tk.StringVar()
+        rb1 = tk.Radiobutton(frame10, text="Shape", variable= var, value="Shape", command=lambda  :displayDefImage(var.get()))
+        rb1.grid(row=0, column=0, padx=30)
+        rb2 = tk.Radiobutton(frame10, text="Size", variable=var, value="Size", command=lambda :displayDefImage(var.get()))
+        rb2.grid(row=0, column=1, padx=30)
+        rb3 = tk.Radiobutton(frame10, text="Rotation", variable=var, value="Rotation", command=lambda: displayDefImage(var.get()))
+        rb3.grid(row=0, column=2, padx=30)
+        rb4 = tk.Radiobutton(frame10, text="Placement", variable=var, value="Placement", command=lambda: displayDefImage(var.get()))
+        rb4.grid(row=0, column=3, padx=30)
+        rb5 = tk.Radiobutton(frame10, text="Boundary", variable=var, value="Boundary", command=lambda: displayDefImage(var.get()))
+        rb5.grid(row=0, column=4, padx=30)
+        rb6 = tk.Radiobutton(frame10, text="Color", variable=var, value="Color", command=lambda: displayDefImage(var.get()))
+        rb6.grid(row=0, column=5, padx=30)
+        rb7 = tk.Radiobutton(frame10, text="Patch", variable=var, value="Patch",command=lambda: displayDefImage(var.get()))
+        rb7.grid(row=0, column=6, padx=30)
+        rb8 = tk.Radiobutton(frame10, text="Common", variable=var, value="Common", command=lambda: displayDefImage(var.get()))
+        rb8.grid(row=0, column=7, padx=30)
 
 
 def displayDefImage(rb_value):
