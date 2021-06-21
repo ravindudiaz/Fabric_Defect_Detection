@@ -16,6 +16,7 @@ segment_path = ""
 mask_path = ""
 isReference = False
 isTextured = False
+file_name = ''
 
 def setFolderNames( work_path, sub_folder_name):
     global new_dir,main_color_path,segment_path,img_path
@@ -28,10 +29,12 @@ def setFolderNames( work_path, sub_folder_name):
 
 
 def setFolderNames_reference():
-    global new_dir, main_color_path, segment_path, img_path,mask_path, isReference,img_mask_path,isTextured
+    global new_dir, main_color_path, segment_path, img_path,mask_path, isReference,img_mask_path,isTextured,file_name
 
     for dirpath, dirnames, filenames in os.walk('Assets/BR_Module/Output/artworks_ref'):
+
         for file in filenames:
+            file_name = file
             if 'uni_' in file:
                 isTextured = False
                 print('image is uniform')
@@ -57,10 +60,11 @@ def setFolderNames_reference():
 
 
 def setFolderNames_defect():
-    global new_dir, main_color_path, segment_path, img_path,mask_path,isReference,img_mask_path,isTextured
+    global new_dir, main_color_path, segment_path, img_path,mask_path,isReference,img_mask_path,isTextured,file_name
 
     for dirpath, dirnames, filenames in os.walk('Assets/BR_Module/Output/artworks_test'):
         for file in filenames:
+            file_name = file
             if 'uni_' in file:
                 isTextured = False
                 print('image is uniform')
@@ -301,6 +305,19 @@ def get_dim(img):
     x, y, w, h = cv2.boundingRect(largest)
 
     return(x, y, w, h)
+def isMainColorsExist():
+    global file_name
+    imagename, file_extension = os.path.splitext(file_name)
+    isFound = False
+    for dirpath, dirnames, filenames in os.walk('Assets/Seg_Module/data'):
+        for file in filenames:
+            print('searching for',imagename)
+            print(file)
+            if imagename in file:
+                print('colors found')
+                isFound = True
+                break
+        return isFound
 
 def doSegmentation():
 
@@ -309,7 +326,7 @@ def doSegmentation():
 
     img_mask = cv2.imread(img_mask_path)
     width_1, height_1, depth_1 = img_mask.shape
-    ratio = 0.5
+    ratio = 0.4
     img_mask = cv2.resize(img_mask, (int(height_1 * ratio), int(width_1 * ratio)))
     # x, y, w, h = get_dim(img_mask)
     img_mask_gray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
@@ -329,9 +346,22 @@ def doSegmentation():
 
     clr_lst = []
     if isReference:
+        global file_name
+        imagename, file_extension = os.path.splitext(file_name)
         print('Finding unique color values...')
+        if isMainColorsExist():
+            path = os.path.join('Assets/Seg_Module/data',imagename+'.csv')
+            with open(path, mode='r', newline='') as csv_file:
+                reader = csv.DictReader(csv_file)
+                for r in reader:
+                    L = float(r['L'])
+                    A = float(r['A'])
+                    B = float(r['B'])
+                    clr_lst.append([L, A, B])
+            print('Unique values: ', clr_lst)
+        else:
+            clr_lst = unique_count(img)
         data_ls = []
-        clr_lst = unique_count(img)
         for clr in clr_lst:
             data = {'L': clr[0], 'A' : clr[1], 'B': clr[2]}
             data_ls.append(data)
