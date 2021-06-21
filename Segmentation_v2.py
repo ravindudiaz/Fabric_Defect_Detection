@@ -248,8 +248,6 @@ def fill_colors(img,img_mask,colors):
     if isTextured:
         thickness = 0
     boxes = []
-    print('thickness is',thickness)
-    print('isTextured: ',isTextured)
     for c in contours:
         cv2.drawContours(mask2, c, -1, [0, 0, 0], thickness)
         (x, y, w, h) = cv2.boundingRect(c)
@@ -309,12 +307,9 @@ def isMainColorsExist():
     global file_name
     imagename, file_extension = os.path.splitext(file_name)
     isFound = False
-    for dirpath, dirnames, filenames in os.walk('Assets/Seg_Module/data'):
+    for dirpath, dirnames, filenames in os.walk('Assets/src/data'):
         for file in filenames:
-            print('searching for',imagename)
-            print(file)
             if imagename in file:
-                print('colors found')
                 isFound = True
                 break
         return isFound
@@ -326,7 +321,7 @@ def doSegmentation():
 
     img_mask = cv2.imread(img_mask_path)
     width_1, height_1, depth_1 = img_mask.shape
-    ratio = 0.4
+    ratio = 0.5
     img_mask = cv2.resize(img_mask, (int(height_1 * ratio), int(width_1 * ratio)))
     # x, y, w, h = get_dim(img_mask)
     img_mask_gray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
@@ -350,7 +345,7 @@ def doSegmentation():
         imagename, file_extension = os.path.splitext(file_name)
         print('Finding unique color values...')
         if isMainColorsExist():
-            path = os.path.join('Assets/Seg_Module/data',imagename+'.csv')
+            path = os.path.join('Assets/src/data',imagename+'.csv')
             with open(path, mode='r', newline='') as csv_file:
                 reader = csv.DictReader(csv_file)
                 for r in reader:
@@ -358,7 +353,7 @@ def doSegmentation():
                     A = float(r['A'])
                     B = float(r['B'])
                     clr_lst.append([L, A, B])
-            print('Unique values: ', clr_lst)
+            print('No of unique colors found: ', len(clr_lst))
         else:
             clr_lst = unique_count(img)
         data_ls = []
