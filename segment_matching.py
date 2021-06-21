@@ -100,7 +100,6 @@ def doSegmentMatching(reference_csv,defect_csv):
         feature_temp = []
         final_features = []
 
-        print('Feature matching started..')
         for defect_feature in defect_features:
 
             area_dif = abs(float(ref_feature['area']) - float(defect_feature['area']))

@@ -4,7 +4,6 @@ import os
 import csv
 from feature_extract import FeatureExtract
 import shutil
-import matplotlib.pyplot as plt
 
 
 ### create folder structire
@@ -138,7 +137,6 @@ def remove_small_contous(img):
                     # print('remove ready' + str(i))
                     # if cv2.contourArea(cnt)*500 < cnt_areas_sort[0]:
                     if cv2.contourArea(cnt) * 500 < cnt_areas_sort[0]:
-                        print('removed' + str(i))
                         items_to_be_removed.append(i)
 #[a,b,c,d,e,f]#[1,2,4]
 #[a,c,d,e,f]#[1,1,4]
@@ -237,6 +235,7 @@ def refine_mask(mask):
     return mask
 
 def fill_colors(img,img_mask,colors):
+    # startTime = time.time()
     global isTextured
     print('Segmenting main colors....')
     # imgray = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)
@@ -264,33 +263,46 @@ def fill_colors(img,img_mask,colors):
         mask_ls.append(out)
 
     for h1 in range(top,bottom):
+
         for w1 in range(left,right):
-            # new_clr, index = get_most_matching(img[h1][w1], colors)
-            # img[h1][w1] = new_clr
-            # # print(new_clr)
-            # mask_ls[index][h1][w1] = [255, 255, 255]
+
             if (img_mask[h1][w1] == [0]).any() :
-                # print('in mask')
-                img[h1][w1] = [0,0,0]
+                pass
+                #img[h1][w1] = [0,0,0]
             else:
                 new_clr,index = get_most_matching(img[h1][w1],colors)
                 if(mask2[h1][w1] == [0]).any() :
                     pass
                 else:
                     mask_ls[index][h1][w1] = [255, 255, 255]
+                    #img[h1][w1] = new_clr
 
-                # print(img[h1][w1])
-                # if (np.array_equiv(new_clr,np.array([0,0,0]))):
-                #     if(mask2[h1][w1] == [0]).any() :
-                #         pass
-                #     else:
-                #         mask_ls[index][h1][w1] = [255, 255, 255]
-                # else:
-                #     # print('front')
-                #     mask_ls[index][h1][w1] = [255, 255, 255]
-                img[h1][w1] = new_clr
+    # print("--- %s seconds ---" % (time.time() - startTime))
+    return mask_ls
+def fill_colors_child2(img,img_mask,mask2,mask_ls,h1,left,right,colors):
+    for w1 in range(left, right):
+        # print('running thread', h1, w1)
+        if (img_mask[h1][w1] == [0]).any():
+            pass
+        else:
+            new_clr, index = get_most_matching(img[h1][w1], colors)
+            if (mask2[h1][w1] == [0]).any():
+                pass
+            else:
+                mask_ls[index][h1][w1] = [255, 255, 255]
 
-    return img,mask_ls
+def fill_colors_child(img,img_mask,mask2,mask_ls,h1,w1,colors):
+    print('running thread',h1,w1)
+    if (img_mask[h1][w1] == [0]).any():
+        pass
+    else:
+        new_clr, index = get_most_matching(img[h1][w1], colors)
+        if (mask2[h1][w1] == [0]).any():
+            pass
+        else:
+            mask_ls[index][h1][w1] = [255, 255, 255]
+
+
 
 def get_dim(img):
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -391,7 +403,7 @@ def doSegmentation():
     img_lab = cv2.cvtColor(img.astype(np.float32) / 255, cv2.COLOR_RGB2Lab)
     img_lab = cv2.resize(img_lab, (int(height_1 * ratio), int(width_1 * ratio)))
 
-    new_img, masks = fill_colors(img_lab, img_mask, clr_lst)
+    masks = fill_colors(img_lab, img_mask, clr_lst)
     print('main color segmentationg complete..')
     # new_img = cv2.cvtColor(new_img, cv2.COLOR_Lab2BGR)
     # new_img = cv2.resize(new_img, (height_1, width_1))
@@ -401,13 +413,14 @@ def doSegmentation():
     new_masks = []
     for i,mask in enumerate(masks):
         mask = cv2.resize(mask, (height_1, width_1))
-        mask_show = cv2.resize(mask, (500, 500))
+        # mask_show = cv2.resize(mask, (500, 500))
         # cv2.imshow('mask', mask_show)
         # cv2.waitKey()
         out = np.zeros_like(img_original)  # Extract out the object and place into output image
         out[mask == 255] = img_original[mask == 255]
         out_image_path = os.path.join(main_color_path, 'color_' + str(i) + ".jpg")
         cv2.imwrite(out_image_path, out)
+        print(out_image_path)
         imgray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
 
         # new = plt.imshow(mask )
@@ -415,10 +428,14 @@ def doSegmentation():
         blur = cv2.GaussianBlur(imgray, (5, 5), 0)
         ret3, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         new_masks.append(thresh)
-    # print("--- %s seconds ---" % (time.time() - start_time))
+    return new_masks,clr_lst,img_original
 
+
+def segmentInsidColors(new_masks,clr_lst,img_original):
+    to_draw_cnt = img_original.copy()
+    drawing_clrs = [(255,0,0),(0,255,0),(0,0,255), (255,100,200),(255,255,0),(255,0,255),(0,255,255),(100,100,100),(20,20,200),(15,15,15)]
+    font = cv2.FONT_HERSHEY_SIMPLEX
     for i,mask in enumerate(new_masks):
-
         color = {"L": clr_lst[i][0], "A": clr_lst[i][1], "B": clr_lst[i][2]}  # to add to csv]
         print('Segmenting children of color: ', color )
         kernel = np.ones((2, 2), np.uint8)
@@ -480,10 +497,16 @@ def doSegmentation():
             if max_level == 0:
 
                 for a, cnt in enumerate(contours):
+                    rect = cv2.minAreaRect(cnt)
+                    box = cv2.boxPoints(rect)
+                    box = np.int0(box)
+                    w, h = np.min(box, axis=0)[:2]
                     mask = np.zeros_like(img_original)
                     cv2.drawContours(mask, contours, a, (255, 255, 255), -1)
+                    cv2.drawContours(to_draw_cnt,contours, a, drawing_clrs[i],15)
 
                     id = str(i) + "" + str(search_no) + "" + str(a)
+                    cv2.putText(to_draw_cnt, id, (w, h), font, 2, drawing_clrs[i], 5, cv2.LINE_AA)
                     out_image_path = os.path.join(segment_path,
                                                   str(id) + ".jpg")
                     out_mask_path = os.path.join(mask_path,
@@ -498,6 +521,10 @@ def doSegmentation():
                     save_pending = False
                     # print("came inside while")
                     for a, cnt in enumerate(contours):
+                        rect = cv2.minAreaRect(cnt)
+                        box = cv2.boxPoints(rect)
+                        box = np.int0(box)
+                        w, h = np.min(box, axis=0)[:2]
                         # print("search no is " + str(search_no))
                         if search_no == lst[a]:
                             if save_pending == True:
@@ -519,6 +546,9 @@ def doSegmentation():
                             mask = np.zeros_like(img_original)
                             # print("drawing image for " + str(i) + "" + str(search_no) + "" + str(a))
                             cv2.drawContours(mask, contours, a, (255, 255, 255), -1)
+                            id2 = str(i) + "" + str(search_no) + "" + str(a - 1)
+                            cv2.drawContours(to_draw_cnt, contours, a, drawing_clrs[i], 15)
+                            cv2.putText(to_draw_cnt, id2, (w, h), font, 2, drawing_clrs[i], 5, cv2.LINE_AA)
                             save_pending = True
 
                         if lst[a] == search_no + 1:
@@ -541,8 +571,11 @@ def doSegmentation():
                                 cv2.imwrite(out_mask_path, mask)
 
                     search_no = search_no + 2
+        out_image_path = os.path.join(main_color_path, "labled.jpg")
+        cv2.imwrite(out_image_path, to_draw_cnt)
+    return color_dic
 
-
+def extractFeatures(color_dic):
     write_to_csv(os.path.join(new_dir,'color.csv'),['id','color'],color_dic)
 
     # cv2.waitKey(0)

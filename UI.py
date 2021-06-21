@@ -7,51 +7,45 @@ import Segmentation_v2 as Segmentation
 import segment_matching
 from PIL import ImageTk, Image
 import QA_Module as qa
-import  cv2
+import cv2
 import BR_Module_For_UI as br
+import threading
+import time
 
-#location paths-----------------------------------------
+# location paths-----------------------------------------
 
 
-matching_ref_loc ="./Assets/Seg_Module/Output/defect/matching_segments/reference/"
+matching_ref_loc = "./Assets/Seg_Module/Output/defect/matching_segments/reference/"
 matching_test_loc = "./Assets/Seg_Module/Output/defect/matching_segments/defect/"
 nonmatching_ref_loc = "./Assets/Seg_Module/Output/defect/none_matching_segments/reference/"
-nonmatching_test_loc= "./Assets/Seg_Module/Output/defect/none_matching_segments/defect/"
+nonmatching_test_loc = "./Assets/Seg_Module/Output/defect/none_matching_segments/defect/"
 nonmatching_ref_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments/reference/"
 nonmatching_test_conflict = "./Assets/Seg_Module/Output/defect/conflict_segments/defect/"
 
-
-#ref artwork & cloth loc
+# ref artwork & cloth loc
 ref_artwork_mask_loc = "./Assets/BR_Module/Output/mask/ref/artwork/"
-ref_or_cloth_loc = "./Assets/BR_Module/Output/outer_removed_ref/"  #outer removed ref
+ref_or_cloth_loc = "./Assets/BR_Module/Output/outer_removed_ref/"  # outer removed ref
 
-#test artwork &cloth loc
+# test artwork &cloth loc
 test_artwork_mask_loc = "Assets/BR_Module/Output/mask/test/artwork/"
-test_or_cloth_loc = "Assets/BR_Module/Output/outer_removed_test/"  #outer removed test
+test_or_cloth_loc = "Assets/BR_Module/Output/outer_removed_test/"  # outer removed test
 
-#ref isolated artwork loc
+# ref isolated artwork loc
 ref_artwork_loc = "./Assets/BR_Module/Output/artworks_ref/"
 
-#test isolated artwork loc
+# test isolated artwork loc
 test_artwork_loc = "./Assets/BR_Module/Output/artworks_test/"
 
-
-#might need to be adjusted as per segment rois
+# might need to be adjusted as per segment rois
 ref_seg_roi_loc = "./Assets/QA_Module/Output/rois"
 test_seg_roi_loc = "./Assets/QA_Module/Output/rois"
 
-
-
-#reference vars
+# reference vars
 # ref_features = []
 # ref_thresholded_segs = []
 # ref_dimensions = []
 # ref_segs = []
 # #-----------------------------------------------------------------------------------------------------------------------
-
-
-
-
 
 
 root = tk.Tk()
@@ -61,7 +55,12 @@ root.configure(background='white')
 s1 = ttk.Style()
 
 segmentMatchReportWindow = None
-
+sProgressBartWindow = None
+sprogress_label_1Txt = None
+sprogress_label_2Txt = None
+sprogress_label_3Txt = None
+pb = None
+sprogress_close_button = None
 
 ref_img_thumb = 'Assets/src/ref_img_thumb.jpg'
 
@@ -73,48 +72,51 @@ resizeVals = (250, 300)
 
 
 def getRef():
-    
     img = Image.open(ref_img_thumb).resize(resizeVals)
 
     return img
 
-def getTest():
 
+def getTest():
     img = Image.open(test_img_thumb).resize(resizeVals)
 
     return img
 
-def getTexSample():
 
+def getTexSample():
     img = Image.open(tex_sample_img_thumb).resize(resizeVals)
 
     return img
 
-ref_image =ImageTk.PhotoImage(getRef())
+
+ref_image = ImageTk.PhotoImage(getRef())
 
 test_image = ImageTk.PhotoImage(getTest())
 
 tex_sample_image = ImageTk.PhotoImage(getTexSample())
 
 
-
-
 def ImageBrowser_ref():
     global ref_image
-    filename = filedialog.askopenfilename( title = "Select Refference File", filetypes=[("jpg files","*.jpg"), ("jpeg files","*,jpeg"), ("png files","*.png"), ("all files","*.*")])
+    filename = filedialog.askopenfilename(title="Select Refference File",
+                                          filetypes=[("jpg files", "*.jpg"), ("jpeg files", "*,jpeg"),
+                                                     ("png files", "*.png"), ("all files", "*.*")])
     imageLabel_ref.config(text=filename)
-    if(filename != ''):
+    if (filename != ''):
         img = Image.open(filename)
-        img = img.resize(resizeVals,Image.ANTIALIAS)
-        ref_image = ImageTk.PhotoImage(img )
-        ref_img_label.config(image = ref_image)
+        img = img.resize(resizeVals, Image.ANTIALIAS)
+        ref_image = ImageTk.PhotoImage(img)
+        ref_img_label.config(image=ref_image)
     else:
         ref_image = ImageTk.PhotoImage(getRef())
         ref_img_label.config(image=ref_image)
 
+
 def ImageBrowser_test():
     global test_image
-    filename = filedialog.askopenfilename(title="Select Refference File",filetypes=[("jpg files", "*.jpg"), ("jpeg files", "*,jpeg"),("png files", "*.png"), ("all files", "*.*")])
+    filename = filedialog.askopenfilename(title="Select Refference File",
+                                          filetypes=[("jpg files", "*.jpg"), ("jpeg files", "*,jpeg"),
+                                                     ("png files", "*.png"), ("all files", "*.*")])
     imageLabel_test.config(text=filename)
     if (filename != ''):
         img = Image.open(filename)
@@ -125,9 +127,12 @@ def ImageBrowser_test():
         test_image = ImageTk.PhotoImage(getTest())
         test_img_label.config(image=test_image)
 
+
 def ImageBrowser_TexSample():
     global tex_sample_image
-    filename = filedialog.askopenfilename(title="Select Refference File",filetypes=[("jpg files", "*.jpg"), ("jpeg files", "*,jpeg"),("png files", "*.png"), ("all files", "*.*")])
+    filename = filedialog.askopenfilename(title="Select Refference File",
+                                          filetypes=[("jpg files", "*.jpg"), ("jpeg files", "*,jpeg"),
+                                                     ("png files", "*.png"), ("all files", "*.*")])
     imageLabel_TexSample.config(text=filename)
     if (filename != ''):
         img = Image.open(filename)
@@ -138,8 +143,31 @@ def ImageBrowser_TexSample():
         tex_sample_image = ImageTk.PhotoImage(getTexSample())
         tex_sample_img_label.config(image=tex_sample_image)
 
-def segmentImage_ref():
 
+def segmentImage_ref_thread():
+    t2 = threading.Thread(target=segmentationProgressBar)
+    t2.start()
+
+    t1 = threading.Thread(target=segmentImage_ref)
+
+    t1.start()
+
+
+def segmentImage_test_thread():
+    t2 = threading.Thread(target=segmentationProgressBar)
+    t2.start()
+
+    t1 = threading.Thread(target=segmentImage_test)
+
+    t1.start()
+
+
+def segmentImage_ref():
+    global sprogress_label_1Txt
+    global sprogress_label_2Txt
+    global sprogress_label_3Txt
+    global pb
+    time.sleep(1)
     image_path = imageLabel_ref.cget("text")
 
     if (image_path == ''):
@@ -147,19 +175,47 @@ def segmentImage_ref():
         return
 
     else:
-
         if Segmentation.setFolderNames_reference():
-
-            status,csv_path = Segmentation.doSegmentation()
-            if(status):
-                messagebox.showinfo("Segmentation Success!", "Image segmented successfully")
-                referenceFeaturesLabel.config(text=csv_path )
+            sprogress_label_1Txt.config(text='Main colors segmenting...')
+            pb['value'] = 10
+            # pb.start(200)
+            sprogress_label_2Txt.config(text='10%')
+            new_masks, clr_lst, img_original = Segmentation.doSegmentation()
+            # pb.stop()
+            sprogress_label_1Txt.config(text='Segmenting secondary elements...')
+            pb['value'] = 70
+            sprogress_label_2Txt.config(text='70%')
+            color_dic = Segmentation.segmentInsidColors(new_masks, clr_lst, img_original)
+            sprogress_label_1Txt.config(text='Extracting features...')
+            pb['value'] = 90
+            sprogress_label_2Txt.config(text='90%')
+            status, csv_path = Segmentation.extractFeatures(color_dic)
+            sprogress_label_1Txt.config(text='Complete!')
+            pb['value'] = 100
+            sprogress_label_2Txt.config(text='100%')
+            if (status):
+                # messagebox.showinfo("Segmentation Success!", "Image segmented successfully")
+                sprogress_label_3Txt.config(text='Image segmented successfully')
+                referenceFeaturesLabel.config(text=csv_path)
+                sprogress_close_button.grid(row=0, column=0)
             else:
-                messagebox.showerror("Segmentation Failed", "Something went wrong while segmenting the image")
+                # messagebox.showerror("Segmentation Failed", "Something went wrong while segmenting the image")
+                sprogress_label_1Txt.config(text='Error')
+                sprogress_label_3Txt.config(text='Something went wrong while segmenting the image')
+                sprogress_close_button.grid(row=0, column=0)
         else:
-            messagebox.showerror("Segmentation Failed", "Something went wrong while creating directory tree.Please try again")
+            sprogress_label_1Txt.config(text='Error')
+            sprogress_label_3Txt.config(text='Something went wrong while creating directory tree.Please try again')
+            sprogress_close_button.grid(row=0, column=0)
+            # messagebox.showerror("Segmentation Failed", "Something went wrong while creating directory tree.Please try again")
+
 
 def segmentImage_test():
+    global sprogress_label_1Txt
+    global sprogress_label_2Txt
+    global sprogress_label_3Txt
+    global pb
+    time.sleep(1)
     image_path = imageLabel_test.cget("text")
 
     if (image_path == ''):
@@ -170,37 +226,120 @@ def segmentImage_test():
 
         if Segmentation.setFolderNames_defect():
 
-            status,csv_path = Segmentation.doSegmentation()
-            if(status):
-                messagebox.showinfo("Segmentation Success!", "Image segmented successfully")
-                defectFeaturesLabel.config(text=csv_path )
+            sprogress_label_1Txt.config(text='Main colors segmenting...')
+            pb['value'] = 10
+            # pb.start(200)
+            sprogress_label_2Txt.config(text='10%')
+            new_masks, clr_lst, img_original = Segmentation.doSegmentation()
+            # pb.stop()
+            sprogress_label_1Txt.config(text='Segmenting secondary elements...')
+            pb['value'] = 70
+            sprogress_label_2Txt.config(text='70%')
+            color_dic = Segmentation.segmentInsidColors(new_masks, clr_lst, img_original)
+            sprogress_label_1Txt.config(text='Extracting features...')
+            pb['value'] = 90
+            sprogress_label_2Txt.config(text='90%')
+            status, csv_path = Segmentation.extractFeatures(color_dic)
+            sprogress_label_1Txt.config(text='Complete!')
+            pb['value'] = 100
+            sprogress_label_2Txt.config(text='100%')
+            if (status):
+                # messagebox.showinfo("Segmentation Success!", "Image segmented successfully")
+                sprogress_label_3Txt.config(text='Image segmented successfully')
+                defectFeaturesLabel.config(text=csv_path)
+                sprogress_close_button.grid(row=0, column=0)
             else:
-                messagebox.showerror("Segmentation Failed", "Something went wrong while segmenting the image")
+                # messagebox.showerror("Segmentation Failed", "Something went wrong while segmenting the image")
+                sprogress_label_1Txt.config(text='Error')
+                sprogress_label_3Txt.config(text='Something went wrong while segmenting the image')
+                sprogress_close_button.grid(row=0, column=0)
         else:
-            messagebox.showerror("Segmentation Failed", "Something went wrong while creating directory tree.Please try again")
+            sprogress_label_1Txt.config(text='Error')
+            sprogress_label_3Txt.config(text='Something went wrong while creating directory tree.Please try again')
+            sprogress_close_button.grid(row=0, column=0)
+            # messagebox.showerror("Segmentation Failed", "Something went wrong while creating directory tree.Please try again")
+
+
+def segmentationProgressBar():
+    global sprogress_label_1Txt
+    global sprogress_label_2Txt
+    global sprogress_label_3Txt
+    global pb
+    global sprogress_close_button
+    global sProgressBartWindow
+
+    if (sProgressBartWindow is not None):
+        try:
+            if sProgressBartWindow.winfo_exists():
+                sProgressBartWindow.destroy()
+        except:
+            pass
+
+    sProgressBartWindow = tk.Toplevel(root)
+
+    sProgressBartWindow.title("Processing Segmentation....")
+
+    sProgressBartWindow.geometry('600x200')
+
+    sprogress_frame1 = ttk.Frame(sProgressBartWindow)
+    sprogress_frame1.pack(pady=20)
+    sprogress_label_1Txt = ttk.Label(sprogress_frame1, text='Preparing...',
+                                     font=("Calibrir", 10, 'bold'))
+    sprogress_label_1Txt.grid(row=0, column=0)
+    # progressbar
+    sprogress_frame2 = ttk.Frame(sProgressBartWindow)
+    sprogress_frame2.pack(pady=5)
+    pb = ttk.Progressbar(
+        sprogress_frame2,
+        orient='horizontal',
+        mode='determinate',
+        length=280
+    )
+    pb.grid(row=0, column=0)
+    sprogress_label_2Txt = ttk.Label(sprogress_frame2, text='',
+                                     font=("Calibrir", 8, 'bold'))
+    sprogress_label_2Txt.grid(row=1, column=0)
+
+    sprogress_frame4 = ttk.Frame(sProgressBartWindow)
+    sprogress_frame4.pack(pady=10)
+    sprogress_label_3Txt = ttk.Label(sprogress_frame4, text='',
+                                     font=("Calibrir", 8, 'bold'))
+    sprogress_label_3Txt.grid(row=1, column=0)
+
+    sprogress_frame3 = ttk.Frame(sProgressBartWindow)
+    sprogress_frame3.pack(pady=10)
+    sprogress_close_button = ttk.Button(sprogress_frame3, text='Close', command=destroySegmentationProgressBar)
+
+
+def destroySegmentationProgressBar():
+    global sProgressBartWindow
+    sProgressBartWindow.destroy()
+
 
 def featuresBrowser(selection):
-    filename = filedialog.askopenfilename( title = "Select Feature File", filetypes=[("csv","*.csv")])
+    filename = filedialog.askopenfilename(title="Select Feature File", filetypes=[("csv", "*.csv")])
     if selection == 'reference':
         referenceFeaturesLabel.config(text=filename)
     if selection == 'defect':
         defectFeaturesLabel.config(text=filename)
 
+
 def matchSegments():
     referenceImgCSV = referenceFeaturesLabel.cget("text")
     defectImgCSV = defectFeaturesLabel.cget("text")
 
-    if(referenceImgCSV == '' or defectImgCSV == ''):
+    if (referenceImgCSV == '' or defectImgCSV == ''):
         messagebox.showerror("Invalid paths", "Invalid segments CSV paths")
 
     else:
-        matches = segment_matching.doSegmentMatching(referenceImgCSV,defectImgCSV)
+        matches = segment_matching.doSegmentMatching(referenceImgCSV, defectImgCSV)
         path = os.path.dirname(defectImgCSV)
 
-        segment_matching.saveMatchingSegments(path,matches)
-        showSegmentMatchReport(matches )
+        segment_matching.saveMatchingSegments(path, matches)
+        showSegmentMatchReport(matches)
         # except:
         #     messagebox.showerror("Segment Matching Failed", "Something went wrong while segment matching")
+
 
 def showSegmentMatchReport(segments):
     global segmentMatchReportWindow
@@ -221,43 +360,45 @@ def showSegmentMatchReport(segments):
 
     progress_frame1 = ttk.Frame(segmentMatchReportWindow)
     progress_frame1.pack(pady=20)
-    label_1Txt = ttk.Label(progress_frame1, text='Segment matching completed with following results:', font=("Calibrir", 10, 'bold'))
+    label_1Txt = ttk.Label(progress_frame1, text='Segment matching completed with following results:',
+                           font=("Calibrir", 10, 'bold'))
     label_1Txt.grid(row=0, column=1)
 
     progress_frame2 = ttk.Frame(segmentMatchReportWindow)
     progress_frame2.pack(pady=20)
     label_2_1Txt = ttk.Label(progress_frame2, text="Matching Segments")
     label_2_1Txt.grid(row=1, column=0)
-    label_2_2Txt = ttk.Label(progress_frame2, text="Count: "+str(len(segments[0])))
+    label_2_2Txt = ttk.Label(progress_frame2, text="Count: " + str(len(segments[0])))
     label_2_2Txt.grid(row=1, column=2)
 
     progress_frame3 = ttk.Frame(segmentMatchReportWindow)
     progress_frame3.pack(pady=20)
     label_2_1Txt = ttk.Label(progress_frame3, text="None Matching Reference Segments")
     label_2_1Txt.grid(row=1, column=0)
-    label_2_2Txt = ttk.Label(progress_frame3, text="Count: "+str(len(segments[1])))
+    label_2_2Txt = ttk.Label(progress_frame3, text="Count: " + str(len(segments[1])))
     label_2_2Txt.grid(row=1, column=2)
 
     progress_frame4 = ttk.Frame(segmentMatchReportWindow)
     progress_frame4.pack(pady=20)
     label_2_1Txt = ttk.Label(progress_frame4, text="None Matching Defect Segments")
     label_2_1Txt.grid(row=1, column=0)
-    label_2_2Txt = ttk.Label(progress_frame4, text="Count: "+str(len(segments[2])))
+    label_2_2Txt = ttk.Label(progress_frame4, text="Count: " + str(len(segments[2])))
     label_2_2Txt.grid(row=1, column=2)
 
     progress_frame5 = ttk.Frame(segmentMatchReportWindow)
     progress_frame5.pack(pady=20)
     label_2_1Txt = ttk.Label(progress_frame5, text="Matching Conflict Refference Segments")
     label_2_1Txt.grid(row=1, column=0)
-    label_2_2Txt = ttk.Label(progress_frame5, text="Count: "+str(len(segments[3])))
+    label_2_2Txt = ttk.Label(progress_frame5, text="Count: " + str(len(segments[3])))
     label_2_2Txt.grid(row=1, column=2)
 
     progress_frame6 = ttk.Frame(segmentMatchReportWindow)
     progress_frame6.pack(pady=20)
     label_2_1Txt = ttk.Label(progress_frame6, text="Matching Conflict Defect Segments")
     label_2_1Txt.grid(row=1, column=0)
-    label_2_2Txt = ttk.Label(progress_frame6, text="Count: "+str(len(segments[4])))
+    label_2_2Txt = ttk.Label(progress_frame6, text="Count: " + str(len(segments[4])))
     label_2_2Txt.grid(row=1, column=2)
+
 
 def removeBackground_ref():
     global ref_image
@@ -284,14 +425,14 @@ def removeBackground_ref():
         messagebox.showerror("Invalid Selection", "Please select a relavant textured sample image!")
         return
 
-    output_path = br.BRModule().run(image_ref_path,image_test_path,image_tex_sample_path,"ref")
+    output_path = br.BRModule().run(image_ref_path, image_test_path, image_tex_sample_path, "ref")
 
     imageLabel_ref.config(text=output_path)
-    if(output_path != ''):
+    if (output_path != ''):
         img = Image.open(output_path)
-        img = img.resize(resizeVals,Image.ANTIALIAS)
-        ref_image = ImageTk.PhotoImage(img )
-        ref_img_label.config(image = ref_image)
+        img = img.resize(resizeVals, Image.ANTIALIAS)
+        ref_image = ImageTk.PhotoImage(img)
+        ref_img_label.config(image=ref_image)
         messagebox.showinfo("Background remove Success", "Successfully remove the background of reference image!")
 
 
@@ -309,7 +450,6 @@ def removeBackground_test():
     image_ref_nameExeptExt = os.path.splitext(image_ref_name)[0]
     image_tex_sample_name = br.BRModule().splitFileNames(image_tex_sample_path)
     image_tex_sample_nameExeptExt = os.path.splitext(image_tex_sample_name)[0]
-    
 
     if (image_test_path == ''):
         messagebox.showerror("Invalid path", "Invalid test image path. Please make a valid selection!")
@@ -337,7 +477,7 @@ def removeBackground_test():
         messagebox.showerror("Invalid Selection", "Please select a relavant textured sample image!")
         return
 
-    output_path = br.BRModule().run(image_ref_path,image_test_path,image_tex_sample_path,"test")
+    output_path = br.BRModule().run(image_ref_path, image_test_path, image_tex_sample_path, "test")
 
     if (output_path != ''):
         img = Image.open(output_path)
@@ -346,22 +486,23 @@ def removeBackground_test():
         test_img_label.config(image=test_image)
         messagebox.showinfo("Background remove Success", "Successfully remove the background of test image!")
 
-#QA Module UI
+
+# QA Module UI
 
 def detectRefFeatures():
     # qa.check_artwork_position(ref_artwork_loc, ref_or_cloth_loc, test_artwork_mask_loc, test_or_cloth_loc, ref_or_cloth_loc, test_or_cloth_loc)
-    #------------------------------------------------------------
+    # ------------------------------------------------------------
     global mr_file_list
     global no_of_matching_ref_segs
 
     # matching_ref
     if os.path.exists(matching_ref_loc):
-         mr_file_list = os.listdir(matching_ref_loc)
-         no_of_matching_ref_segs = len(mr_file_list)
+        mr_file_list = os.listdir(matching_ref_loc)
+        no_of_matching_ref_segs = len(mr_file_list)
     else:
-         mr_file_list = []
-         no_of_matching_ref_segs = 0
-    #------------------------------------------------------------
+        mr_file_list = []
+        no_of_matching_ref_segs = 0
+    # ------------------------------------------------------------
     global mt_file_list
     global no_of_matching_test_segs
 
@@ -369,7 +510,7 @@ def detectRefFeatures():
     mt_file_list = os.listdir(matching_test_loc)
     no_of_matching_test_segs = len(mt_file_list)
 
-    #------------------------------------------------------------
+    # ------------------------------------------------------------
 
     global nmr_file_list
     global no_of_nonmatching_ref_segs
@@ -381,7 +522,7 @@ def detectRefFeatures():
     else:
         nmr_file_list = []
         no_of_nonmatching_ref_segs = 0
-    #------------------------------------------------------------
+    # ------------------------------------------------------------
 
     global nmt_file_list
     global no_of_nonmatching_test_segs
@@ -394,7 +535,7 @@ def detectRefFeatures():
         nmt_file_list = []
         no_of_nonmatching_test_segs = 0
 
-    #-------------------------------------------------------------
+    # -------------------------------------------------------------
 
     global nmr_conflict_file_list
     global no_of_ref_conflict_segs
@@ -407,39 +548,45 @@ def detectRefFeatures():
         nmr_conflict_file_list = []
         no_of_ref_conflict_segs = 0
 
-    #--------------------------------------------------------------
+    # --------------------------------------------------------------
 
     global nmt_conflict_file_list
     global no_of_test_conflict_segs
 
-    #non_matching_test_conflict
+    # non_matching_test_conflict
     if os.path.exists(nonmatching_test_conflict):
         nmt_conflict_file_list = os.listdir(nonmatching_test_conflict)
         no_of_test_conflict_segs = len(nmt_conflict_file_list)
     else:
         nmt_conflict_file_list = []
         no_of_test_conflict_segs = 0
-    #---------------------------------------------------------------
+    # ---------------------------------------------------------------
 
     global ref_features
     global ref_thresholded_segs
     global ref_dimensions
     global ref_segs
-    ref_features, ref_thresholded_segs, ref_dimensions, ref_segs = qa.detect_features(no_of_matching_ref_segs, 1, matching_ref_loc, matching_test_loc, ref_or_cloth_loc)
+    ref_features, ref_thresholded_segs, ref_dimensions, ref_segs = qa.detect_features(no_of_matching_ref_segs, 1,
+                                                                                      matching_ref_loc,
+                                                                                      matching_test_loc,
+                                                                                      ref_or_cloth_loc)
     messagebox.showinfo("Extraction success", "Reference image features extracted successfully!")
 
 
-
 def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs):
-    common_def, ok_to_continue = qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc, matching_test_loc, no_of_nonmatching_ref_segs,
-                      no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs, nmt_file_list,
-                   ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
-                      nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc)
+    common_def, ok_to_continue = qa.match_segments(nonmatching_ref_loc, nonmatching_test_loc, matching_ref_loc,
+                                                   matching_test_loc, no_of_nonmatching_ref_segs,
+                                                   no_of_test_conflict_segs, nmr_file_list, no_of_nonmatching_test_segs,
+                                                   nmt_file_list,
+                                                   ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list,
+                                                   nmt_conflict_file_list, nonmatching_ref_conflict,
+                                                   nonmatching_test_conflict, matching_ref_loc, matching_test_loc,
+                                                   ref_artwork_loc, test_artwork_loc)
 
     # if ok_to_continue == 1:
     shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
         no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
-        no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc,common_def)
+        no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc, common_def)
 
     qa.display_arr(shape_def, "Shape")
     qa.display_arr(size_def, "Size")
@@ -448,22 +595,21 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     qa.display_arr(color_def, "Color")
     qa.display_arr(minmax_def, "Minima Maxima")
 
-    if len(shape_def) != 0 or len(size_def) != 0 or len(rotation_def) !=0 or len(color_def)!=0 or len(minmax_def) != 0 or len(placement_def) != 0:
+    if len(shape_def) != 0 or len(size_def) != 0 or len(rotation_def) != 0 or len(color_def) != 0 or len(
+            minmax_def) != 0 or len(placement_def) != 0:
         status = "Defect found!"
     else:
         status = "Defects not found"
-
 
     # messagebox.showinfo("Comparison Success!", "Comparison complete")
 
     newWindow = tk.Toplevel(root)
     newWindow.title("Defect Report")
     newWindow.geometry("1100x950")
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     global frame9
     frame9 = ttk.Frame(newWindow)
-    frame9.pack( pady=20)
-
+    frame9.pack(pady=20)
 
     refimglist = os.listdir(ref_artwork_loc)
     print(refimglist)
@@ -489,50 +635,48 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
     comp_test_label.image = marked_img_comp
     comp_test_label.grid(row=0, column=0)
 
-
     frame10 = ttk.Frame(newWindow)
     frame10.pack(pady=10)
 
     status_def_txt = tk.StringVar()
-    status_def_txt.set("Status : "+ status)
+    status_def_txt.set("Status : " + status)
 
     shape_def_txt = tk.StringVar()
-    shape_def_txt.set("Shape defect segments : "+str(len(shape_def)))
+    shape_def_txt.set("Shape defect segments : " + str(len(shape_def)))
 
     size_def_txt = tk.StringVar()
     size_def_txt.set("Size defect segments : " + str(len(size_def)))
 
-    rotation_def_txt=  tk.StringVar()
-    rotation_def_txt.set("Rotation defect segments : "+str(len(rotation_def)))
+    rotation_def_txt = tk.StringVar()
+    rotation_def_txt.set("Rotation defect segments : " + str(len(rotation_def)))
 
     placement_def_txt = tk.StringVar()
-    placement_def_txt.set("Placement defect segments : "+str(len(placement_def)))
+    placement_def_txt.set("Placement defect segments : " + str(len(placement_def)))
 
     boundary_def_txt = tk.StringVar()
-    boundary_def_txt.set("Boundary defect segments : "+str(len(minmax_def)))
+    boundary_def_txt.set("Boundary defect segments : " + str(len(minmax_def)))
 
     color_def_txt = tk.StringVar()
     color_def_txt.set("Color defect segments : " + str(len(color_def)))
 
     status_def_label = tk.Label(frame10, background='white', textvariable=status_def_txt)
-    status_def_label.grid(row=0, column=0, columnspan = 2)
-    shape_def_label = tk.Label(frame10, background='white', textvariable = shape_def_txt)
-    shape_def_label.grid(row=1, column =0, padx=40)
+    status_def_label.grid(row=0, column=0, columnspan=2)
+    shape_def_label = tk.Label(frame10, background='white', textvariable=shape_def_txt)
+    shape_def_label.grid(row=1, column=0, padx=40)
     size_def_label = tk.Label(frame10, background='white', textvariable=size_def_txt)
-    size_def_label.grid(row=1, column=1,padx=40)
+    size_def_label.grid(row=1, column=1, padx=40)
     rotation_def_label = tk.Label(frame10, background='white', textvariable=rotation_def_txt)
-    rotation_def_label.grid(row=2, column=0,padx=40)
+    rotation_def_label.grid(row=2, column=0, padx=40)
     placement_def_label = tk.Label(frame10, background='white', textvariable=placement_def_txt)
-    placement_def_label.grid(row=2, column=1,padx=40)
+    placement_def_label.grid(row=2, column=1, padx=40)
     boundary_def_label = tk.Label(frame10, background='white', textvariable=boundary_def_txt)
-    boundary_def_label.grid(row=3, column=0,padx=40)
+    boundary_def_label.grid(row=3, column=0, padx=40)
     color_def_label = tk.Label(frame10, background='white', textvariable=color_def_txt)
-    color_def_label.grid(row=3, column=1,padx=40)
+    color_def_label.grid(row=3, column=1, padx=40)
     status_def_label = tk.Label(frame10, background='white', textvariable=status_def_txt)
-    status_def_label.grid(row=4, column=0,padx=40)
+    status_def_label.grid(row=4, column=0, padx=40)
 
-
-    #Radio Buttons to show separate outputs
+    # Radio Buttons to show separate outputs
     # frame10 = ttk.Frame(newWindow)
     # frame10.pack(fill=tk.BOTH, expand=1, pady=20)
 
@@ -556,21 +700,18 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
 
 
 def displayDefImage(rb_value):
-    img = Image.open("./Assets/QA_Module/Output/"+rb_value+"/"+rb_value.lower()+".jpg")
+    img = Image.open("./Assets/QA_Module/Output/" + rb_value + "/" + rb_value.lower() + ".jpg")
     img_photo = ImageTk.PhotoImage(img)
     comp_test_label = ttk.Label(frame9, background='white', image=img_photo)
     comp_test_label.image = img_photo
     comp_test_label.grid(row=0, column=1)
 
 
-
-
-
 ##### ref image UI
 frame_0 = ttk.Frame(root)
-frame_0.pack(pady = 20)
+frame_0.pack(pady=20)
 
-ref_topic_label = ttk.Label(frame_0, text = 'Reference Image' ,font=("Calibrir", 12, 'bold'))
+ref_topic_label = ttk.Label(frame_0, text='Reference Image', font=("Calibrir", 12, 'bold'))
 ref_topic_label.grid(row=0, column=0, )
 
 frame1 = ttk.Frame(frame_0)
@@ -589,30 +730,27 @@ label_frame_1.grid(row=0, column=1)
 browse_image_button = ttk.Button(frame1, text="Browse", command=ImageBrowser_ref)
 browse_image_button.grid(row=0, column=2)
 
-
-ref_img_label = ttk.Label(frame1, background='white' ,image = ref_image)
+ref_img_label = ttk.Label(frame1, background='white', image=ref_image)
 ref_img_label.grid(row=2, column=1, )
 
 frame1_1 = ttk.Frame(frame1)
 frame1_1.grid(row=3, column=1)
 
 ref_back_rmv_button = ttk.Button(frame1_1, text="Remove Background", command=removeBackground_ref)
-ref_back_rmv_button.pack (pady = 5)
+ref_back_rmv_button.pack(pady=5)
 
 frame1_2 = ttk.Frame(frame1)
 frame1_2.grid(row=4, column=1)
 
-segment_ref_image_button = ttk.Button(frame1_2, text="Segment Image", command=segmentImage_ref)
-segment_ref_image_button.pack (pady = 5)
-
+segment_ref_image_button = ttk.Button(frame1_2, text="Segment Image", command=segmentImage_ref_thread)
+segment_ref_image_button.pack(pady=5)
 
 frame_seperator = ttk.Frame(frame_0, width=30)
 frame_seperator.grid(row=0, column=1)
 
-
 ##### textured sample UI
 
-text_sample_topic_label = ttk.Label(frame_0, text = 'Textured Sample(Only Textured)',font=("Calibrir", 12, 'bold') )
+text_sample_topic_label = ttk.Label(frame_0, text='Textured Sample(Only Textured)', font=("Calibrir", 12, 'bold'))
 text_sample_topic_label.grid(row=0, column=2, )
 
 frame2 = ttk.Frame(frame_0)
@@ -631,20 +769,18 @@ label_frame_2.grid(row=0, column=1)
 browse_image_button = ttk.Button(frame2, text="Browse", command=ImageBrowser_TexSample)
 browse_image_button.grid(row=0, column=2)
 
-tex_sample_img_label = ttk.Label(frame2, background='white' ,image = tex_sample_image)
+tex_sample_img_label = ttk.Label(frame2, background='white', image=tex_sample_image)
 tex_sample_img_label.grid(row=2, column=1)
 
-frame_seperator = ttk.Frame(frame2, height =70)
+frame_seperator = ttk.Frame(frame2, height=70)
 frame_seperator.grid(row=3, column=1)
 
 frame_seperator = ttk.Frame(frame_0, width=30)
 frame_seperator.grid(row=0, column=3)
 
-
-
 ##### test image UI
 
-test_topic_label = ttk.Label(frame_0, text = 'Test Image',font=("Calibrir", 12, 'bold') )
+test_topic_label = ttk.Label(frame_0, text='Test Image', font=("Calibrir", 12, 'bold'))
 test_topic_label.grid(row=0, column=4, )
 
 frame3 = ttk.Frame(frame_0)
@@ -663,30 +799,25 @@ label_frame_3.grid(row=0, column=1)
 browse_image_button = ttk.Button(frame3, text="Browse", command=ImageBrowser_test)
 browse_image_button.grid(row=0, column=2)
 
-
-test_img_label = ttk.Label(frame3, background='white' ,image = test_image)
+test_img_label = ttk.Label(frame3, background='white', image=test_image)
 test_img_label.grid(row=2, column=1)
 
 frame3_1 = ttk.Frame(frame3)
 frame3_1.grid(row=3, column=1)
 
 test_back_rmv_button = ttk.Button(frame3_1, text="Remove Background", command=removeBackground_test)
-test_back_rmv_button.pack (pady = 5)
+test_back_rmv_button.pack(pady=5)
 
 frame3_2 = ttk.Frame(frame3)
 frame3_2.grid(row=4, column=1)
 
-segment_test_image_button = ttk.Button(frame3_2, text="Segment Image", command=segmentImage_test)
-segment_test_image_button.pack (pady = 5)
-
-
-
-
+segment_test_image_button = ttk.Button(frame3_2, text="Segment Image", command=segmentImage_test_thread)
+segment_test_image_button.pack(pady=5)
 
 ##### refference segments UI
 
 frame4 = ttk.Frame(root)
-frame4.pack(pady = 5)
+frame4.pack(pady=5)
 
 referenceFeaturesTxt = ttk.Label(frame4, text='Reference Features: ')
 referenceFeaturesTxt.grid(row=0, column=0)
@@ -703,7 +834,7 @@ browse_reference_features_button.grid(row=0, column=2)
 
 ##### defect segments UI
 frame5 = ttk.Frame(root)
-frame5.pack(pady = 5)
+frame5.pack(pady=5)
 
 defectFeaturesTxt = ttk.Label(frame5, text='Defect Features:      ')
 defectFeaturesTxt.grid(row=0, column=0)
@@ -719,8 +850,7 @@ browse_defect_features_button = ttk.Button(frame5, text="Browse", command=lambda
 browse_defect_features_button.grid(row=0, column=2)
 
 frame6 = ttk.Frame(root)
-frame6.pack(pady = 5)
-
+frame6.pack(pady=5)
 
 browse_defect_features_button = ttk.Button(frame6, text="Match Segments", command=lambda: matchSegments())
 browse_defect_features_button.grid(row=0, column=1)
@@ -730,10 +860,11 @@ frame6.pack(pady=5)
 
 detect_ref_features_button = ttk.Button(frame6, text="Detect Reference Features",
                                         command=lambda: detectRefFeatures())
-detect_ref_features_button.grid(row=0, column=0, padx = 150)
+detect_ref_features_button.grid(row=0, column=0, padx=150)
 
-
-detectAndCompare_button = ttk.Button(frame6, text="Detect and Compare Features", command=lambda: detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_segs))
-detectAndCompare_button.grid(row=0, column=1, padx = 150)
+detectAndCompare_button = ttk.Button(frame6, text="Detect and Compare Features",
+                                     command=lambda: detectAndCompare(ref_features, ref_thresholded_segs,
+                                                                      ref_dimensions, ref_segs))
+detectAndCompare_button.grid(row=0, column=1, padx=150)
 
 root.mainloop()
