@@ -436,85 +436,123 @@ def detectAndCompare(ref_features, ref_thresholded_segs, ref_dimensions, ref_seg
                    ref_or_cloth_loc, no_of_ref_conflict_segs, nmr_conflict_file_list, nmt_conflict_file_list, nonmatching_ref_conflict,
                       nonmatching_test_conflict, matching_ref_loc, matching_test_loc, ref_artwork_loc, test_artwork_loc)
 
-    if ok_to_continue == 1:
-        shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
-            no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
-            no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc,common_def)
+    # if ok_to_continue == 1:
+    shape_def, size_def, placement_def, rotation_def, color_def, minmax_def = qa.detect_and_compare_matching_segments(
+        no_of_matching_test_segs, ref_features, 1, ref_thresholded_segs, ref_dimensions, ref_segs,
+        no_of_matching_test_segs, matching_test_loc, test_or_cloth_loc, test_artwork_loc,common_def)
 
-        qa.display_arr(shape_def, "Shape")
-        qa.display_arr(size_def, "Size")
-        qa.display_arr(placement_def, "Placement")
-        qa.display_arr(rotation_def, "Rotation")
-        qa.display_arr(color_def, "Color")
-        qa.display_arr(minmax_def, "Minima Maxima")
+    qa.display_arr(shape_def, "Shape")
+    qa.display_arr(size_def, "Size")
+    qa.display_arr(placement_def, "Placement")
+    qa.display_arr(rotation_def, "Rotation")
+    qa.display_arr(color_def, "Color")
+    qa.display_arr(minmax_def, "Minima Maxima")
 
-        # messagebox.showinfo("Comparison Success!", "Comparison complete")
-
-        newWindow = tk.Toplevel(root)
-        newWindow.title("Defect Report")
-        newWindow.geometry("1500x1200")
-        #-----------------------------------------------------------------------
-        global frame9
-        frame9 = ttk.Frame(newWindow)
-        frame9.pack( fill=tk.BOTH,expand = 1)
-
-        #-----------------------------------------------------------------------
-
-        # detect_ref_features_button = ttk.Button(second_frame, text="Detect Reference Features",
-        #                                         command=lambda: detectRefFeatures())
-        # detect_ref_features_button.grid(row=0, column=0, padx=150)
-        #
-        # detectAndCompare_button = ttk.Button(second_frame, text="Detect and Compare Features",
-        #                                      command=lambda: detectAndCompare(ref_features, ref_thresholded_segs,
-        #                                                                       ref_dimensions, ref_segs))
-        # detectAndCompare_button.grid(row=0, column=1, padx=150)
+    if len(shape_def) != 0 or len(size_def) != 0 or len(rotation_def) !=0 or len(color_def)!=0 or len(minmax_def) != 0 or len(placement_def) != 0:
+        status = "Defect found!"
+    else:
+        status = "Defects not found"
 
 
-        refimglist = os.listdir(ref_artwork_loc)
-        print(refimglist)
-        # if refimglist != []:
+    # messagebox.showinfo("Comparison Success!", "Comparison complete")
 
-        ref_artwork_img = cv2.imread(ref_artwork_loc + refimglist[0])
-        img_dims = ref_artwork_img.shape
-        ref_artwork_img_saved = cv2.imwrite("./Assets/QA_Module/Output/ref_artwork/ref.jpg", cv2.resize(ref_artwork_img[int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+    newWindow = tk.Toplevel(root)
+    newWindow.title("Defect Report")
+    newWindow.geometry("1100x950")
+    #-----------------------------------------------------------------------
+    global frame9
+    frame9 = ttk.Frame(newWindow)
+    frame9.pack( pady=20)
 
-        ref_artwork = Image.open("./Assets/QA_Module/Output/ref_artwork/ref.jpg")
-        ref_artwork = ref_artwork.resize((750,800),Image.ANTIALIAS)
-        ref_img_comp = ImageTk.PhotoImage(ref_artwork)
-        comp_ref_label = ttk.Label(frame9, background = 'white', image = ref_img_comp)
-        comp_ref_label.image = ref_img_comp
-        comp_ref_label.grid(row = 0, column = 0)
 
-        testimglist = os.listdir("./Assets/QA_Module/Output/Rotation/")
-        print(testimglist)
-        # if testimglist != []:
-        marked_artwork = Image.open("./Assets/QA_Module/Output/Rotation/" + testimglist[0])
-        marked_img_comp = ImageTk.PhotoImage(marked_artwork)
-        comp_test_label = ttk.Label(frame9, background='white', image=marked_img_comp)
-        comp_test_label.image = marked_img_comp
-        comp_test_label.grid(row=0, column=1)
+    refimglist = os.listdir(ref_artwork_loc)
+    print(refimglist)
+    # if refimglist != []:
 
-        #Radio Buttons to show separate outputs
-        frame10 = ttk.Frame(newWindow)
-        frame10.pack(fill=tk.BOTH, expand=1, pady=20)
+    # ref_artwork_img = cv2.imread(ref_artwork_loc + refimglist[0])
+    # img_dims = ref_artwork_img.shape
+    # ref_artwork_img_saved = cv2.imwrite("./Assets/QA_Module/Output/ref_artwork/ref.jpg", cv2.resize(ref_artwork_img[int(img_dims[0]/10):int(img_dims[0]*9/10), 0:img_dims[1]],(750,800)))
+    #
+    # ref_artwork = Image.open("./Assets/QA_Module/Output/ref_artwork/ref.jpg")
+    # ref_artwork = ref_artwork.resize((750,800),Image.ANTIALIAS)
+    # ref_img_comp = ImageTk.PhotoImage(ref_artwork)
+    # comp_ref_label = ttk.Label(frame9, background = 'white', image = ref_img_comp)
+    # comp_ref_label.image = ref_img_comp
+    # comp_ref_label.grid(row = 0, column = 0)
 
-        var = tk.StringVar()
-        rb1 = tk.Radiobutton(frame10, text="Shape", variable= var, value="Shape", command=lambda  :displayDefImage(var.get()))
-        rb1.grid(row=0, column=0, padx=30)
-        rb2 = tk.Radiobutton(frame10, text="Size", variable=var, value="Size", command=lambda :displayDefImage(var.get()))
-        rb2.grid(row=0, column=1, padx=30)
-        rb3 = tk.Radiobutton(frame10, text="Rotation", variable=var, value="Rotation", command=lambda: displayDefImage(var.get()))
-        rb3.grid(row=0, column=2, padx=30)
-        rb4 = tk.Radiobutton(frame10, text="Placement", variable=var, value="Placement", command=lambda: displayDefImage(var.get()))
-        rb4.grid(row=0, column=3, padx=30)
-        rb5 = tk.Radiobutton(frame10, text="Boundary", variable=var, value="Boundary", command=lambda: displayDefImage(var.get()))
-        rb5.grid(row=0, column=4, padx=30)
-        rb6 = tk.Radiobutton(frame10, text="Color", variable=var, value="Color", command=lambda: displayDefImage(var.get()))
-        rb6.grid(row=0, column=5, padx=30)
-        rb7 = tk.Radiobutton(frame10, text="Patch", variable=var, value="Patch",command=lambda: displayDefImage(var.get()))
-        rb7.grid(row=0, column=6, padx=30)
-        rb8 = tk.Radiobutton(frame10, text="Common", variable=var, value="Common", command=lambda: displayDefImage(var.get()))
-        rb8.grid(row=0, column=7, padx=30)
+    testimglist = os.listdir("./Assets/QA_Module/Output/Common/")
+    print(testimglist)
+    # if testimglist != []:
+    marked_artwork = Image.open("./Assets/QA_Module/Output/Common/" + testimglist[0])
+    marked_img_comp = ImageTk.PhotoImage(marked_artwork)
+    comp_test_label = ttk.Label(frame9, background='white', image=marked_img_comp)
+    comp_test_label.image = marked_img_comp
+    comp_test_label.grid(row=0, column=0)
+
+
+    frame10 = ttk.Frame(newWindow)
+    frame10.pack(pady=10)
+
+    status_def_txt = tk.StringVar()
+    status_def_txt.set("Status : "+ status)
+
+    shape_def_txt = tk.StringVar()
+    shape_def_txt.set("Shape defect segments : "+str(len(shape_def)))
+
+    size_def_txt = tk.StringVar()
+    size_def_txt.set("Size defect segments : " + str(len(size_def)))
+
+    rotation_def_txt=  tk.StringVar()
+    rotation_def_txt.set("Rotation defect segments : "+str(len(rotation_def)))
+
+    placement_def_txt = tk.StringVar()
+    placement_def_txt.set("Placement defect segments : "+str(len(placement_def)))
+
+    boundary_def_txt = tk.StringVar()
+    boundary_def_txt.set("Boundary defect segments : "+str(len(minmax_def)))
+
+    color_def_txt = tk.StringVar()
+    color_def_txt.set("Color defect segments : " + str(len(color_def)))
+
+    status_def_label = tk.Label(frame10, background='white', textvariable=status_def_txt)
+    status_def_label.grid(row=0, column=0, columnspan = 2)
+    shape_def_label = tk.Label(frame10, background='white', textvariable = shape_def_txt)
+    shape_def_label.grid(row=1, column =0, padx=40)
+    size_def_label = tk.Label(frame10, background='white', textvariable=size_def_txt)
+    size_def_label.grid(row=1, column=1,padx=40)
+    rotation_def_label = tk.Label(frame10, background='white', textvariable=rotation_def_txt)
+    rotation_def_label.grid(row=2, column=0,padx=40)
+    placement_def_label = tk.Label(frame10, background='white', textvariable=placement_def_txt)
+    placement_def_label.grid(row=2, column=1,padx=40)
+    boundary_def_label = tk.Label(frame10, background='white', textvariable=boundary_def_txt)
+    boundary_def_label.grid(row=3, column=0,padx=40)
+    color_def_label = tk.Label(frame10, background='white', textvariable=color_def_txt)
+    color_def_label.grid(row=3, column=1,padx=40)
+    status_def_label = tk.Label(frame10, background='white', textvariable=status_def_txt)
+    status_def_label.grid(row=4, column=0,padx=40)
+
+
+    #Radio Buttons to show separate outputs
+    # frame10 = ttk.Frame(newWindow)
+    # frame10.pack(fill=tk.BOTH, expand=1, pady=20)
+
+    # var = tk.StringVar()
+    # rb1 = tk.Radiobutton(frame10, text="Shape", variable= var, value="Shape", command=lambda  :displayDefImage(var.get()))
+    # rb1.grid(row=0, column=0, padx=30)
+    # rb2 = tk.Radiobutton(frame10, text="Size", variable=var, value="Size", command=lambda :displayDefImage(var.get()))
+    # rb2.grid(row=0, column=1, padx=30)
+    # rb3 = tk.Radiobutton(frame10, text="Rotation", variable=var, value="Rotation", command=lambda: displayDefImage(var.get()))
+    # rb3.grid(row=0, column=2, padx=30)
+    # rb4 = tk.Radiobutton(frame10, text="Placement", variable=var, value="Placement", command=lambda: displayDefImage(var.get()))
+    # rb4.grid(row=0, column=3, padx=30)
+    # rb5 = tk.Radiobutton(frame10, text="Boundary", variable=var, value="Boundary", command=lambda: displayDefImage(var.get()))
+    # rb5.grid(row=0, column=4, padx=30)
+    # rb6 = tk.Radiobutton(frame10, text="Color", variable=var, value="Color", command=lambda: displayDefImage(var.get()))
+    # rb6.grid(row=0, column=5, padx=30)
+    # rb7 = tk.Radiobutton(frame10, text="Patch", variable=var, value="Patch",command=lambda: displayDefImage(var.get()))
+    # rb7.grid(row=0, column=6, padx=30)
+    # rb8 = tk.Radiobutton(frame10, text="Common", variable=var, value="Common", command=lambda: displayDefImage(var.get()))
+    # rb8.grid(row=0, column=7, padx=30)
 
 
 def displayDefImage(rb_value):
